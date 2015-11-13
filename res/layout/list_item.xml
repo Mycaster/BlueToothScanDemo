@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/LinearLayout01"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+    <ImageView 
+        android:id="@+id/ItemImage"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent" />
+    <LinearLayout 
+        android:id="@+id/values_linearlayout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_marginStart="5dp"
+        android:orientation="vertical">
+        
+        <LinearLayout 
+        	android:id="@+id/value1"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="horizontal">
+            <TextView 
+		        android:layout_height="wrap_content"
+		        android:layout_width="wrap_content"
+		        android:id="@+id/address" />
+        </LinearLayout>
+        <LinearLayout 
+        	android:id="@+id/value2"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="horizontal">
+            <TextView 
+		         android:layout_width="wrap_content"
+		         android:layout_height="wrap_content"
+		         android:id="@+id/uuid" />	     
+	     	<TextView 
+		         android:layout_width="wrap_content"
+		         android:layout_height="wrap_content"
+		         android:gravity="left"
+		         android:id="@+id/major" />	     
+		     <TextView 
+		         android:layout_width="wrap_content"
+		         android:layout_height="wrap_content"
+		         android:gravity="right"
+		         android:id="@+id/minor" />
+        </LinearLayout>
+        
+        <LinearLayout 
+        	android:id="@+id/value3"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="horizontal">
+		    <TextView 
+		         android:layout_width="wrap_content"
+		         android:layout_height="wrap_content"
+		         android:id="@+id/rssi" />
+			 <TextView 
+		         android:layout_width="wrap_content"
+		         android:layout_height="wrap_content"
+		         android:layout_gravity="right"
+		         android:id="@+id/distance" />
+		 </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

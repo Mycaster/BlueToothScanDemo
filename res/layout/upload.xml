@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+    <LinearLayout 
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="设置起始上传时间"
+            android:textSize="15sp"
+            android:layout_weight="3"
+            android:id="@+id/setStartUploadBt"/>
+        <Button 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="设置结束上传时间"
+           	android:textSize="15sp"
+           	android:layout_weight="3"
+            android:id="@+id/setEndUploadBt"/>
+    </LinearLayout>
+    
+     <LinearLayout 
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        <TextView 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/fragment_text"
+            android:textSize="17sp"
+            android:text="上传间隔: "/>
+	    <EditText
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content"
+	            android:hint="输入时间间隔"
+	            style="@style/fragment_text"
+	            android:textSize="17sp"
+	            android:id="@+id/edit_tx"/>
+    </LinearLayout>
+ 	<LinearLayout 
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        <TextView 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/fragment_text"
+            android:textSize="17sp"
+            android:text="IP地址:  "/>
+	    <EditText
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="输入IP地址"
+            style="@style/fragment_text"
+            android:textSize="17sp"
+            android:id="@+id/ip_edit"/>
+    </LinearLayout>
+    <LinearLayout 
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        <TextView 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/fragment_text"
+            android:textSize="17sp"
+            android:text="端口号:  "/>
+	    <EditText
+	        android:id="@+id/port_edit"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="输入端口号"
+            style="@style/fragment_text"
+            android:textSize="17sp"/>
+    </LinearLayout>
+    <Button
+        android:id="@+id/setting_bt"
+        android:text="设置上传参数"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/button_selector"
+        android:layout_gravity="center"
+        android:textColor="@android:color/white"
+        android:textSize="17sp"
+        android:padding="12dp" />
+    <TextView 
+        android:id="@+id/detail_tx"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        style="@style/fragment_text"
+        android:layout_gravity="center_horizontal"
+        android:textSize="17sp"/>
+    
+    <LinearLayout 
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+	     <Button 
+	        android:id="@+id/bt_send"
+	        android:layout_height="wrap_content"
+	        android:layout_width="wrap_content"
+	        android:layout_weight="1"
+	        android:background="@drawable/button_selector"
+	        android:layout_gravity="center"
+	        android:textColor="@android:color/white"
+	        android:textSize="17sp"
+	        android:padding="12dp"
+	        android:text="开始上传"/>
+	     <Button 
+	        android:id="@+id/bt_stop"
+	        android:layout_height="wrap_content"
+	        android:layout_width="wrap_content"
+	        android:layout_weight="1"
+			android:background="@drawable/button_selector"
+	        android:layout_gravity="center"
+	        android:textColor="@android:color/white"
+	        android:textSize="17sp"
+	        android:padding="12dp"
+	        android:text="停止上传"/>
+    </LinearLayout>
+    
+    <FrameLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:padding="8dp"
+            android:layout_gravity="bottom"
+            android:layout_alignParentBottom="true">
+        <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                android:src="@drawable/frame"/>
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" Detail:"
+                android:id="@+id/uploadDetail" 
+                android:clickable="false"
+                android:textColor="#ffacacac" 
+                android:textSize="17sp" />
+    </FrameLayout>
+    
+    
+    
+     
+</LinearLayout>

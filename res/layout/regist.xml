@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:background="@android:color/white">
+	<FrameLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="120dp"
+            android:padding="5dp"
+            android:layout_gravity="bottom"
+            android:id="@+id/ignored_view"
+            android:layout_alignParentBottom="true">
+        <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                android:src="@drawable/frame"/>
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" 1.点注册开始扫描周围蓝牙并上传用户信息\n\n2.与服务器通信相关信息请在上传界面设置"
+                android:id="@+id/textView2" 
+                android:layout_gravity="center" 
+                android:gravity="center"
+                android:clickable="false"
+                android:textColor="#ffacacac" 
+                android:textSize="17sp" 
+                android:padding="5dp"/>
+    </FrameLayout>
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_above="@+id/ignored_view">
+
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/button_selector"
+                android:textColor="@android:color/white"
+                android:text=" 注册  "
+                android:textSize="17sp"
+                android:padding="12dp"
+                android:id="@+id/btn_open_menu"
+                android:layout_gravity="center"
+                android:layout_marginTop="4dp"/>
+
+    </LinearLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:id="@+id/Progress_Regist" 
+        android:layout_gravity="left" 
+        android:gravity="left"
+        android:clickable="false"
+        android:textColor="#ffacacac" 
+        android:textSize="17sp" 
+        android:padding="5dp"/>
+    
+ 	<ListView 
+        android:id="@+id/register_list" 
+        android:layout_marginTop="4dp"
+        android:layout_width="fill_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:drawSelectorOnTop="false" />
+
+
+</LinearLayout>
+
