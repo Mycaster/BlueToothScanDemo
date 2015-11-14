@@ -10,28 +10,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -39,7 +33,6 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.husong.btscannerdemo.R;
 import com.husong.btscannerdemo.bean.iBeacon;
 import com.husong.btscannerdemo.controller.Tools;
@@ -61,8 +54,7 @@ public class RegistFragment extends Fragment {
     private ListView register_listview ;
     private String TAG = "HomeFragment";
     private Button regist_bt ;
-    private boolean isRegist = false;
-	private StringBuilder detailInfo = new StringBuilder();
+    private StringBuilder detailInfo = new StringBuilder();
 	private TextView Progress_Regist;
     
     private PrintWriter out = null;
@@ -75,7 +67,6 @@ public class RegistFragment extends Fragment {
     private ArrayList<HashMap<String, Object>> registerlistItems;    //存放文字、图片信息
     private SimpleAdapter registerlistAdapter;         		 //适配器
 	private BluetoothManager mBtManager;
-    
 	
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -233,7 +224,6 @@ public class RegistFragment extends Fragment {
         Log.i("regist data",datas.toString());
        	out.println(datas);
        	Log.i("send status", "数据已发送");
-       	isRegist = true;
        	detailInfo.append("注册信息已发送—>");
     	Progress_Regist.setText(detailInfo);
        	//regist_bt.setText("注册信息已发送");

@@ -1,6 +1,5 @@
 package com.husong.btscannerdemo.controller;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -10,78 +9,37 @@ import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import com.husong.btscannerdemo.R;
-import com.husong.btscannerdemo.fragment.MenuActivity;
-import com.husong.btscannerdemo.fragment.MyApplication;
-
-import android.app.Application;
+import com.husong.btscannerdemo.fragment.OnProgressListener;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.TimePicker;
 
 public class UploadService extends Service {
 
    private String TAG ="UploadService"; 
-   private BufferedReader in = null;  
    private PrintWriter out = null;
    private Socket clientSocket= null; 
-   private Timer timer = new Timer(true);
+   private Timer timer;
+   private TimerTask timerTask;
    private SharedPreferences mysp;
    
-   private static int intCounter=0;
-   private int uploadInterval;
+   private static int intCounter=1;
    private int uploadcount = 15;
    private Date startDate =new Date();
    
-   LinearLayout uploadFragment = (LinearLayout)(MenuActivity.getInstance().getLayoutInflater().inflate(R.layout.upload, null));
-   TextView Progress_Detail = (TextView)uploadFragment.findViewById(R.id.uploadDetail);
-   
-   private TimerTask timerTask = new TimerTask(){  
-		 public void run() {  //另开的线程，不在UI线程里
-			 if(intCounter<=uploadcount){
-					++intCounter;
-					if(connect()){
-						sendMessage();
-				        Log.i("Current Thread ID",""+Thread.currentThread().getId());
-				   		Log.i("Run Service", "Counter:"+Integer.toString(intCounter));
-					}else {
-					 onDestroy();
-					 Log.i("scan","Service is Destoryed");
-					}
-			 }
-		 }
-	};
-   
-
    @Override
    public void onCreate(){
        super.onCreate();
        mysp = getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
        uploadcount = mysp.getInt("UploadCount", 0);
-       uploadInterval = mysp.getInt("Interval", 0);
+	   startDate.setHours(mysp.getInt("StartUploadHour", 0));
+	   startDate.setMinutes(mysp.getInt("StartUploadMin", 0));
        Log.i("Create Service", "onCreate");
-   }
-   
-   @Override
-   public void onStart(Intent intent,int startId){
-	   	Log.i("Current Thread ID", ""+Thread.currentThread().getId());
-	   	//timer.schedule(timerTask,1000,uploadInterval*1000);
-	   	Log.i("startUploadHour", mysp.getInt("StartUploadHour",0)+"");
-	   	Log.i("startUploadMin", mysp.getInt("StartUploadMin",0)+"");
-	   	startDate.setHours(mysp.getInt("StartUploadHour", 0));
-	   	startDate.setMinutes(mysp.getInt("StartUploadMin", 0));
-	   	Log.i(TAG, "等待定时执行任务");
-	   	//timer.schedule(timerTask,startDate,uploadInterval*1000);
-	   	timer.schedule(timerTask,1000,uploadInterval*1000);
-	   	super.onStart(intent, startId);
-	   	Log.i("Start Service", "onStart");
+	   Log.i(TAG, "等待定时执行上传任务");
    }
 
    @Override
@@ -125,11 +83,12 @@ public class UploadService extends Service {
 			e.printStackTrace();
 		}
        	out.println(send_content);
+       	updateUI("第"+(intCounter-1)+"次数据已发送->");
        	Tools.clearFile("blueToothScan_data");
-       	Log.i("send status", "数据已发送");
+       	Log.i("send status", "第"+(intCounter-1)+"次数据已发送->");
    }
    
-   public void disConnect(){
+    public void disConnect(){
       	try {
 			clientSocket.shutdownOutput();
 			clientSocket.close();
@@ -137,10 +96,74 @@ public class UploadService extends Service {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    }
+   
+    private StringBuilder uploadInfo = new StringBuilder();
+    private OnProgressListener onProgressListener;
+    public void setOnProgressListener(OnProgressListener onProgressListener) {
+    	this.onProgressListener = onProgressListener;
+    }
+    public String getProgress() {
+		return uploadInfo.toString();
    }
 	@Override
 	public IBinder onBind(Intent arg0) {
-		// TODO Auto-generated method stub
-		return null;
+		return new MsgBinder();
+	}
+	public class MsgBinder extends Binder{
+		public UploadService getService(){
+			return UploadService.this;
+		}
+	}
+	
+	public void startUpload() {
+		timer = new Timer(true);
+		timerTask = new TimerTask(){  
+			 public void run() {  //另开的线程，不在UI线程里
+				 if(intCounter <= uploadcount){
+					if(connect()){
+						updateUI("服务器连接成功->");
+						++intCounter;
+						sendMessage();
+					}else {
+						updateUI("服务器连接失败->");
+					}
+				 }else {
+					 updateUI("全部发送完成");
+					 intCounter = 1;
+					 onDestroy();
+					 Log.i("scan","Service is Destoryed");
+				 }
+			 }
+		};
+	   	//timer.schedule(timerTask,startDate,mysp.getInt("UploadInterval", 0)*1000);
+		timer.schedule(timerTask,1000,mysp.getInt("UploadInterval", 0)*1000);
+		updateUI("上传进度:\n等待上传->");
+	}
+	public void stopUpload(){
+		timer.cancel();
+		timerTask.cancel();
+		disConnect();
+		intCounter = 1;
+		updateUI("停止");
+	}
+	
+	
+	
+	private void updateUI(String str){
+		if(!str.equals("停止")){
+			uploadInfo.append(str);
+			if(onProgressListener != null){
+				onProgressListener.onProgress(uploadInfo.toString());
+			}	
+		}else {
+			uploadInfo.delete(0,uploadInfo.length());
+			uploadInfo.append("上传进度:\n");
+			if(onProgressListener != null){
+				onProgressListener.onProgress(uploadInfo.toString());
+			}
+		}
+		
+		
 	}
 }

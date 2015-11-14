@@ -26,7 +26,8 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
     private SharedPreferences MyPreferences;
     private SharedPreferences.Editor editor;
     
-	private static MenuActivity instance;
+    
+	private static MenuActivity instance ;
 	
     public static MenuActivity getInstance() {
         return instance;
@@ -112,7 +113,10 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
         resideMenu.addMenuItem(itemAbout,ResideMenu.DIRECTION_LEFT);
 
 //        FragmentTransaction fragmentTransaction =  getSupportFragmentManager().beginTransaction();
-//        fragmentTransaction.replace(R.id.main_fragment,new RegistFragment());
+//        fragmentTransaction.add(R.id.main_fragment,new RegistFragment());
+//        fragmentTransaction.add(R.id.main_fragment,new ScanFragment());
+//        fragmentTransaction.add(R.id.main_fragment,new UploadFragment());
+//        fragmentTransaction.add(R.id.main_fragment,new AboutFragment());
 //        fragmentTransaction.commit();
         
         
@@ -177,8 +181,7 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
 //		transaction.replace(R.id.main_fragment, fragment);
 //		transaction.commit();
 //	}
-
-
+//
 //	private Fragment retrieveFromCache(Fragment menuItem) {
 //		//从fragmentManager中获取已有的fragment对象
 //		FragmentManager fg = getSupportFragmentManager();
@@ -209,7 +212,9 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
         transaction.commit();
     }*/
     
-    private void changeFragment(Fragment targetFragment){
+  
+ // 原来的changeFragment  
+  	private void changeFragment(Fragment targetFragment){
         resideMenu.clearIgnoredViewList();
         getSupportFragmentManager()
                 .beginTransaction()
@@ -217,8 +222,6 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
                 .setTransitionStyle(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
     }
-    
-    
     // What good method is to access resideMenu
     public ResideMenu getResideMenu(){
         return resideMenu;

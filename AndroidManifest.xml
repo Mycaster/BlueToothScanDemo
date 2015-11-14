@@ -27,6 +27,6 @@
             </intent-filter>
         </activity>
         
-        <service android:name=".controller.UploadService" android:process=":remote"/>
+        <service android:name=".controller.UploadService" />
     </application>
 </manifest>

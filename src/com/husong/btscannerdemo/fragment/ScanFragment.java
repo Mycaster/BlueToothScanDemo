@@ -47,31 +47,25 @@ public class ScanFragment extends Fragment
 		super.onDestroyView();
 		getActivity().unregisterReceiver(receiver);
 	}
-
-
 	private EditText et_scanInterval;//输入的扫描间隔
 	private TextView scaninfo;
     private ArrayList<HashMap<String, Object>> listItems;    //存放文字、图片信息
     private SimpleAdapter listItemAdapter;         		 //适配器
     private ListView listview ;
-
     //与蓝牙有关的
 	private BluetoothManager mBtManager;
 	private BluetoothAdapter mBtAdapter;	
 	private Map<String,iBeacon> mapScanResult;
-	
 	//定时器有关
 	private Timer timer;
 	private TimerTask task ;
 	private boolean isTimerCancled =true;
-	
     private SharedPreferences MyPreferences;
     private SharedPreferences.Editor editor;
 	
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2) 
     @Override
-	public View onCreateView(LayoutInflater inflater,
-			ViewGroup container, Bundle savedInstanceState) {
+	public View onCreateView(LayoutInflater inflater,ViewGroup container, Bundle savedInstanceState) {
     	View rootView = inflater.inflate(R.layout.scan, container, false);//关联布局文件  
     	MyPreferences = this.getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
         editor = MyPreferences.edit();
@@ -134,7 +128,7 @@ public class ScanFragment extends Fragment
 				}
 			}
 		});
-		 
+		
 		bt_scan.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -147,13 +141,12 @@ public class ScanFragment extends Fragment
 					Date scanDate = new Date();
 				   	scanDate.setHours(MyPreferences.getInt("StartScanHour", 0));
 				   	scanDate.setMinutes(MyPreferences.getInt("StartScanMin", 0));
-				   	//timer.schedule(task, scanDate, MyPreferences.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
 				   	timer = new Timer(true);
 				   	task = new TimerTask(){  
 						 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
 							 if(count <= MyPreferences.getInt("ScanCount", 0)){
 								mHandler.sendEmptyMessage(0x123);
-								Log.i("scan ", "第"+count+"次：meaasge 0X123 is sent");
+								Log.i("scan ", "第"+count+"次：开始扫描");
 								++count;
 							 }else {
 								 mHandler.sendEmptyMessage(0x124);
@@ -164,6 +157,7 @@ public class ScanFragment extends Fragment
 							 }
 						}
 					 };
+					//timer.schedule(task, scanDate, MyPreferences.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
 				   	timer.schedule(task, 1000, MyPreferences.getInt("ScanInterval", 0)*1000); //延时1s后执行，30s执行一次
 				   	isTimerCancled = false;
 				}
@@ -177,6 +171,7 @@ public class ScanFragment extends Fragment
 				task.cancel();
 				isTimerCancled = true;
 				mBtAdapter.cancelDiscovery();
+				count=1;//重新置1
 				bt_scan.setText("开始扫描");
 				bt_scan.setEnabled(true);
 				bt_scan.setTextColor(Color.WHITE);
@@ -184,7 +179,6 @@ public class ScanFragment extends Fragment
 				bt_stopscan.setTextColor(Color.BLACK);
 			}
 		});
-		
     	return rootView;
     }    
 	private Handler mHandler=new Handler(){
@@ -196,28 +190,15 @@ public class ScanFragment extends Fragment
 				}
 				mBtAdapter.startDiscovery();
 				bt_scan.setText("第"+(count-1)+"次扫描进行中");
-				System.out.println("start Discovery");
+			}if(msg.what ==0x124){
+				bt_scan.setText("开始扫描");
+				bt_scan.setEnabled(true);
+				bt_scan.setTextColor(Color.WHITE);
+				bt_stopscan.setEnabled(false);
+				bt_stopscan.setTextColor(Color.BLACK);
 			}
 		}
 	};
-
-	
-/*	private TimerTask task = new TimerTask(){  
-		 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
-			 if(count <= MyPreferences.getInt("ScanCount", 0)){
-				mHandler.sendEmptyMessage(0x123);
-				Log.i("scan ", "第"+count+"次：meaasge 0X123 is sent");
-				++count;
-			 }else {
-				 mHandler.sendEmptyMessage(0x124);
-				 timer.cancel();
-				 isTimerCancled=true;
-				 count=1;
-				 Log.i("scan","timer is cancled");
-			 }
-		}
-	 };*/
-	
 	private final BroadcastReceiver receiver = new BroadcastReceiver()
 	{
 		@Override
@@ -227,7 +208,7 @@ public class ScanFragment extends Fragment
 			if (BluetoothDevice.ACTION_FOUND.equals(action))
 			{
 				BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-				System.out.println("reveive a device"+device.getName());
+				//System.out.println("reveive a device"+device.getName());
 				short rssi = intent.getExtras().getShort(BluetoothDevice.EXTRA_RSSI);
 				if (device.getBondState() != BluetoothDevice.BOND_BONDED)
 				{
@@ -239,13 +220,13 @@ public class ScanFragment extends Fragment
 				        mBeacon.setAddress(address);		
 				        mBeacon.setRSSI(rssi);
 			            mapScanResult.put(address, mBeacon);
-			            System.out.println("device is saved in mapscanResult");
+			            //System.out.println("device is saved in mapscanResult");
 			        }
 				}
 			}
 			else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
 			{
-				System.out.println("discovery is finished");
+				System.out.println("第"+(count-1)+"次扫描结束");
 				DisPlayData();
 		        writeData();
 				bt_scan.setText("第"+(count-1)+"次扫描结束");
@@ -264,8 +245,6 @@ public class ScanFragment extends Fragment
             map.put("rssi","RSSI: "+mapScanResult.get(addr).getRSSI());
             map.put("ItemImage",R.drawable.bluetooth);   //图片   
             listItems.add(map);
-            Log.i("", map.get(addr)+"");
-            Log.i("", mapScanResult.get(addr)+"");
         }
         //生成适配器的Item和动态数组对应的元素   
         listItemAdapter = new SimpleAdapter(
@@ -276,7 +255,7 @@ public class ScanFragment extends Fragment
                 new int[] {R.id.address, R.id.major,R.id.minor,R.id.rssi,R.id.ItemImage}//list_item.xml布局文件里面的一个ImageView的ID,一个TextView 的ID  
         );
         listview.setAdapter(listItemAdapter);
-        System.out.println("data is dispalyed");
+        System.out.println("数据已显示");
     }
     
     private void writeData(){
