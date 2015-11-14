@@ -236,6 +236,7 @@ public class RegistFragment extends Fragment {
 			clientSocket.close();
 			detailInfo.append("服务器连接已关闭");
         	Progress_Regist.setText(detailInfo);
+        	regist_bt.setText("注册");
         	regist_bt.setTextColor(Color.WHITE);
     		regist_bt.setEnabled(true);
 		} catch (IOException e) {

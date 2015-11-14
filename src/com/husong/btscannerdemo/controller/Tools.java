@@ -148,17 +148,7 @@ public class Tools {
 	}
 
 	public static void clearFile(String fileName){
-		try {
-			File file = new File(SDPATH, fileName);
-			if (!file.exists()) {
-				file.createNewFile();
-			}
-			OutputStream out = new FileOutputStream(file, true);
-			out.write("".getBytes());
-			out.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		(new File(SDPATH, fileName)).delete();
 	}
 	
 	/*

@@ -89,7 +89,6 @@ public class UploadFragment extends Fragment{
 				// TODO Auto-generated method stub
 				Tools.dateTimePicKDialog("设置结束上传时间",detail_tx);
 				Tools.updateDisplayInfo(detail_tx);
-				
 			}
 		});
     	
@@ -173,7 +172,7 @@ public class UploadFragment extends Fragment{
 	private Handler mHandler = new Handler(){
 		public void handleMessage(Message msg) {
 			String text = msg.obj.toString();
-			if(text.equals("上传进度:\n")){
+			if(text.equals("上传进度:\n")||text.equals("上传进度:\n请检查服务器连接")){
                 bt_Send.setEnabled(true);
                 bt_Send.setTextColor(Color.WHITE);
                 bt_Stop.setEnabled(false);

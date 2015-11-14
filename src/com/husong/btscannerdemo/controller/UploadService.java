@@ -45,7 +45,9 @@ public class UploadService extends Service {
    @Override
    public void onDestroy(){
        super.onDestroy();
-       disConnect();
+       if(clientSocket.isConnected()){
+    	   disConnect();
+       }
        timer.cancel();
        Log.i("Destroy Service", "onDestroy");
    }
@@ -126,12 +128,17 @@ public class UploadService extends Service {
 						++intCounter;
 						sendMessage();
 					}else {
-						updateUI("服务器连接失败->");
+						updateUI("服务器连接失败");
+						intCounter =1;
+						//onDestroy();
+						timer.cancel();
+						timerTask.cancel();
 					}
 				 }else {
 					 updateUI("全部发送完成");
 					 intCounter = 1;
-					 onDestroy();
+					 timer.cancel();
+					 timerTask.cancel();
 					 Log.i("scan","Service is Destoryed");
 				 }
 			 }
@@ -143,7 +150,9 @@ public class UploadService extends Service {
 	public void stopUpload(){
 		timer.cancel();
 		timerTask.cancel();
-		disConnect();
+		if(clientSocket.isConnected()){
+			disConnect();
+		}
 		intCounter = 1;
 		updateUI("停止");
 	}
@@ -151,19 +160,23 @@ public class UploadService extends Service {
 	
 	
 	private void updateUI(String str){
-		if(!str.equals("停止")){
+		if(!str.equals("停止")&&!str.equals("服务器连接失败")){
 			uploadInfo.append(str);
 			if(onProgressListener != null){
 				onProgressListener.onProgress(uploadInfo.toString());
 			}	
-		}else {
+		}else if(!str.equals("服务器连接失败")){
 			uploadInfo.delete(0,uploadInfo.length());
 			uploadInfo.append("上传进度:\n");
 			if(onProgressListener != null){
 				onProgressListener.onProgress(uploadInfo.toString());
 			}
+		}else {
+			uploadInfo.delete(0,uploadInfo.length());
+			uploadInfo.append("上传进度:\n请检查服务器连接");
+			if(onProgressListener != null){
+				onProgressListener.onProgress(uploadInfo.toString());
+			}
 		}
-		
-		
 	}
 }
