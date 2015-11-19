@@ -49,7 +49,7 @@ public class RegistFragment extends Fragment {
   	    getActivity().unregisterReceiver(receiver);
 	}
 
-	private View parentView;
+	private View RegistParentView;
     private ResideMenu resideMenu;
     private ListView register_listview ;
     private String TAG = "HomeFragment";
@@ -60,6 +60,7 @@ public class RegistFragment extends Fragment {
     private PrintWriter out = null;
     private Socket clientSocket= null; 
     private SharedPreferences mysp;
+    private static final RegistFragment registFragment = new RegistFragment();
     
     //与蓝牙有关的
 	private BluetoothAdapter registerScanAdapter;	
@@ -68,18 +69,28 @@ public class RegistFragment extends Fragment {
     private SimpleAdapter registerlistAdapter;         		 //适配器
 	private BluetoothManager mBtManager;
 	
+	public static RegistFragment getInstance(){
+		return registFragment;
+	}
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        parentView = inflater.inflate(R.layout.regist, container, false);
+		Log.i("OnCreateView","OnCreateView()");
+		if (RegistParentView == null) {
+            // Inflate the layout for this fragment
+	        RegistParentView = inflater.inflate(R.layout.regist, container, false);
+		} else {
+            ((ViewGroup)RegistParentView.getParent()).removeView(RegistParentView);
+        }
+
         MenuActivity parentActivity = (MenuActivity) getActivity();
         resideMenu = parentActivity.getResideMenu();
-        register_listview = (ListView)parentView.findViewById(R.id.register_list);
-        Progress_Regist = (TextView)parentView.findViewById(R.id.Progress_Regist);
+        register_listview = (ListView)RegistParentView.findViewById(R.id.register_list);
+        Progress_Regist = (TextView)RegistParentView.findViewById(R.id.Progress_Regist);
         mysp = getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
 		registerlistItems = new ArrayList<HashMap<String, Object>>();
 		registeResult = new HashMap<String,iBeacon>();
-		detailInfo.append("注册进度: ");
-		Progress_Regist.setText(detailInfo);
+//		detailInfo.append("注册进度: ");
+//		Progress_Regist.setText(detailInfo);
   	    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
   	    	mBtManager = (BluetoothManager)getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
   	    	registerScanAdapter = mBtManager.getAdapter();
@@ -94,7 +105,7 @@ public class RegistFragment extends Fragment {
   		getActivity().registerReceiver(receiver, filter);
   		filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         getActivity().registerReceiver(receiver, filter);
-        regist_bt = (Button)parentView.findViewById(R.id.btn_open_menu);
+        regist_bt = (Button)RegistParentView.findViewById(R.id.btn_open_menu);
         regist_bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -103,7 +114,7 @@ public class RegistFragment extends Fragment {
 				{
             		regist_bt.setTextColor(Color.GRAY);
             		regist_bt.setText("正在注册");
-            		//regist_bt.setEnabled(false);
+            		regist_bt.setEnabled(false);
             		detailInfo.delete(0, detailInfo.length());
                 	detailInfo.append("注册进度: ");
                 	detailInfo.append("开始扫描—>正在扫描—>");
@@ -116,7 +127,7 @@ public class RegistFragment extends Fragment {
 				}
             }
         });
-        return parentView;
+        return RegistParentView;
     }
 
 	private final BroadcastReceiver receiver = new BroadcastReceiver()

@@ -47,6 +47,8 @@ public class ScanFragment extends Fragment
 		super.onDestroyView();
 		getActivity().unregisterReceiver(receiver);
 	}
+	
+	private View ScanrootView;
 	private EditText et_scanInterval;//输入的扫描间隔
 	private TextView scaninfo;
     private ArrayList<HashMap<String, Object>> listItems;    //存放文字、图片信息
@@ -62,22 +64,33 @@ public class ScanFragment extends Fragment
 	private boolean isTimerCancled =true;
     private SharedPreferences MyPreferences;
     private SharedPreferences.Editor editor;
+    
+    
+    private static final ScanFragment scanFragment = new ScanFragment();
+    
+    public static ScanFragment getInstance(){
+    	return scanFragment;
+    }
 	
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2) 
     @Override
 	public View onCreateView(LayoutInflater inflater,ViewGroup container, Bundle savedInstanceState) {
-    	View rootView = inflater.inflate(R.layout.scan, container, false);//关联布局文件  
+		 if (ScanrootView == null) {
+			 ScanrootView = inflater.inflate(R.layout.scan, container, false);//关联布局文件
+		 } else {
+	         ((ViewGroup)ScanrootView.getParent()).removeView(ScanrootView);
+	     }
     	MyPreferences = this.getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
         editor = MyPreferences.edit();
     	
-        bt_scan = (Button)rootView.findViewById(R.id.scan_bt);
-        bt_stopscan = (Button)rootView.findViewById(R.id.stopscan_bt);
-        bt_set = (Button)rootView.findViewById(R.id.setBt);
-    	bt_setStartBt = (Button)rootView.findViewById(R.id.setStarttimeBt);
-    	bt_setEndBt = (Button)rootView.findViewById(R.id.setEndtimeBt);
-    	et_scanInterval = (EditText)rootView.findViewById(R.id.et_scanInterval);
-        listview = (ListView)rootView.findViewById(R.id.list);
-        scaninfo  = (TextView)rootView.findViewById(R.id.scan_info);
+        bt_scan = (Button)ScanrootView.findViewById(R.id.scan_bt);
+        bt_stopscan = (Button)ScanrootView.findViewById(R.id.stopscan_bt);
+        bt_set = (Button)ScanrootView.findViewById(R.id.setBt);
+    	bt_setStartBt = (Button)ScanrootView.findViewById(R.id.setStarttimeBt);
+    	bt_setEndBt = (Button)ScanrootView.findViewById(R.id.setEndtimeBt);
+    	et_scanInterval = (EditText)ScanrootView.findViewById(R.id.et_scanInterval);
+        listview = (ListView)ScanrootView.findViewById(R.id.list);
+        scaninfo  = (TextView)ScanrootView.findViewById(R.id.scan_info);
         Tools.updatescanDetail(scaninfo);
         listItems = new ArrayList<HashMap<String, Object>>();
 		mapScanResult = new HashMap<String,iBeacon>();
@@ -179,7 +192,7 @@ public class ScanFragment extends Fragment
 				bt_stopscan.setTextColor(Color.BLACK);
 			}
 		});
-    	return rootView;
+    	return ScanrootView;
     }    
 	private Handler mHandler=new Handler(){
 		public void handleMessage(Message msg) {

@@ -107,7 +107,7 @@ public class UploadService extends Service {
     }
     public String getProgress() {
 		return uploadInfo.toString();
-   }
+    }
 	@Override
 	public IBinder onBind(Intent arg0) {
 		return new MsgBinder();
@@ -156,9 +156,6 @@ public class UploadService extends Service {
 		intCounter = 1;
 		updateUI("停止");
 	}
-	
-	
-	
 	private void updateUI(String str){
 		if(!str.equals("停止")&&!str.equals("服务器连接失败")){
 			uploadInfo.append(str);

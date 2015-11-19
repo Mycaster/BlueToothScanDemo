@@ -25,6 +25,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class UploadFragment extends Fragment{
+	private View rootView;
 	private EditText ip_edit;
     private EditText port_edit;
     private TextView detail_tx,progress_detail;
@@ -33,7 +34,6 @@ public class UploadFragment extends Fragment{
 	private Button bt_Send;
 	private Button bt_upStart,bt_upEnd;
 	private EditText uploadInterval;
-	private String TAG = "UploadFragment";
 	private StringBuilder uploadInfo = new StringBuilder();
 	
 	private SharedPreferences MyPreferences;
@@ -43,24 +43,30 @@ public class UploadFragment extends Fragment{
 	private Intent i;
 	private UploadService myservice;
 	
+	private static final UploadFragment uploadFragment = new UploadFragment();
+	
+	public static UploadFragment getInstance(){
+		return uploadFragment;
+	}
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        
+		Log.i("onCreateView","onCreateView()");
     	MyPreferences = getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
         editor = MyPreferences.edit();
         main = this.getActivity();
         //绑定Service
     	i = new Intent(main, UploadService.class);
-//        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         main.bindService(i, conn, Context.BIND_AUTO_CREATE);
         Log.i("Activity Message ", main+" in Fragment");
         
         //控件布局初始化
-        View rootView = inflater.inflate(R.layout.upload, container, false);//关联布局文件  
+        if (rootView == null) {
+        	 rootView = inflater.inflate(R.layout.upload, container, false);//关联布局文件  
+        } else {
+            ((ViewGroup)rootView.getParent()).removeView(rootView);
+        }
     	bt_Send = (Button)rootView.findViewById(R.id.bt_send);
         bt_Stop = (Button)rootView.findViewById(R.id.bt_stop);
-        bt_Stop.setEnabled(false);
-        bt_Stop.setTextColor(Color.GRAY);
         bt_upStart = (Button)rootView.findViewById(R.id.setStartUploadBt);
         bt_upEnd = (Button)rootView.findViewById(R.id.setEndUploadBt);
         settingBt = (Button)rootView.findViewById(R.id.setting_bt);
@@ -69,14 +75,11 @@ public class UploadFragment extends Fragment{
     	port_edit =(EditText)rootView.findViewById(R.id.port_edit);
     	detail_tx = (TextView)rootView.findViewById(R.id.detail_tx);
     	progress_detail = (TextView)rootView.findViewById(R.id.uploadDetail);
-    	uploadInfo.append("上传进度:\n");
-    	progress_detail.setText(uploadInfo);
     	Tools.updateDisplayInfo(detail_tx);
 
     	bt_upStart.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				// TODO Auto-generated method stub
 				Tools.dateTimePicKDialog("设置起始上传时间",detail_tx);
 				Tools.updateDisplayInfo(detail_tx);
 			}
@@ -86,7 +89,6 @@ public class UploadFragment extends Fragment{
 			
 			@Override
 			public void onClick(View arg0) {
-				// TODO Auto-generated method stub
 				Tools.dateTimePicKDialog("设置结束上传时间",detail_tx);
 				Tools.updateDisplayInfo(detail_tx);
 			}
@@ -182,4 +184,26 @@ public class UploadFragment extends Fragment{
 		}
 		
 	};
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		Log.i("OnSaveInstanceState","OnSaveInstanceState()");
+		//outState.putBundle(WINDOW_HIERARCHY_TAG, mWindow.saveHierarchyState());
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onCreate(savedInstanceState);
+		Log.i("OnCreate","OnCreate()");
+	}
+
+	@Override
+	public void onDestroyView() {
+		// TODO Auto-generated method stub
+		super.onDestroyView();
+		Log.i("OnDestoryView","OnDestoryView()");
+	}
+
 }

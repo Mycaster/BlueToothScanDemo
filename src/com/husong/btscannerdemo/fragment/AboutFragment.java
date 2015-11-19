@@ -8,6 +8,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 public class AboutFragment extends Fragment{
+	
+	private static final AboutFragment aboutFragment = new AboutFragment();
+	public static AboutFragment getInstance(){
+		return aboutFragment;
+	}
 	 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {

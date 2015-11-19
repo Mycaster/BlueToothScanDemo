@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -20,7 +19,6 @@ import com.special.ResideMenu.ResideMenuItem;
 public class MenuActivity extends FragmentActivity implements View.OnClickListener{
 
     private ResideMenu resideMenu;
-    private MenuActivity mContext;
     private ResideMenuItem itemHome;
     private ResideMenuItem itemScan;
     private ResideMenuItem itemUpload;
@@ -46,14 +44,17 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
         Log.i("Application Message", getApplication()+" in Activity");
         instance = this;
         
-        FragmentCache.add(new RegistFragment());
-        FragmentCache.add(new UploadFragment());
-        FragmentCache.add(new ScanFragment());
-        FragmentCache.add(new AboutFragment());
+        FragmentCache.add(RegistFragment.getInstance());
+        FragmentCache.add(UploadFragment.getInstance());
+        FragmentCache.add(ScanFragment.getInstance());
+        FragmentCache.add(AboutFragment.getInstance());
         
         setUpMenu();
         if( savedInstanceState == null ){
-        	getSupportFragmentManager().beginTransaction().replace(R.id.main_fragment, new RegistFragment(), "fragmentTag")
+           // changeFragment(RegistFragment.getInstance());//方法一对应
+
+            //方法2对应
+            getSupportFragmentManager().beginTransaction().replace(R.id.main_fragment, RegistFragment.getInstance(), "fragmentTag")
             .setTransitionStyle(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
             .commit();
         }
@@ -144,13 +145,13 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
     @Override
     public void onClick(View view) {
         if (view == itemHome){
-            changeFragment(new RegistFragment());
+            changeFragment(RegistFragment.getInstance());
         }else if (view==itemScan){
-        	changeFragment(new ScanFragment());
+        	changeFragment(ScanFragment.getInstance());
         }else if(view==itemUpload){
-        	changeFragment(new UploadFragment());
+        	changeFragment(UploadFragment.getInstance());
         }else if(view==itemAbout){
-        	changeFragment(new AboutFragment());
+        	changeFragment(AboutFragment.getInstance());
         }
         resideMenu.closeMenu();
     }
@@ -167,44 +168,7 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
         }
     };
 
-    private void changeFragment(Fragment menuItem){
-  		resideMenu.clearIgnoredViewList();
-  		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-  		transaction.setTransitionStyle(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-		Log.i("Traget Fragment Status", (menuItem==null)+"");
-		Fragment fragment = retrieveFromCache(menuItem);
-		//transaction.addToBackStack(null);
-		transaction.replace(R.id.main_fragment, fragment,"fragmentTag");
-		transaction.commit();
-	}
-	private Fragment retrieveFromCache(Fragment menuItem) {
-		Fragment currentFragment = getSupportFragmentManager().findFragmentByTag("fragmentTag");
-		Iterator<Fragment> e = FragmentCache.iterator();    
-		while(e.hasNext()){    
-		  	Fragment element = e.next();  
-			if(currentFragment.getClass().equals(element.getClass())) {
-				e.remove();
-			}
-		}
-		FragmentCache.add(currentFragment);
-		//先用当前新的Fragment替换旧的Fragment
-//		for (Fragment oldFragment : FragmentCache){
-//			if (currentFragment.getClass().equals(oldFragment.getClass())) {
-//				FragmentCache.remove(oldFragment);
-//				FragmentCache.add(currentFragment);
-//			}
-//		}
-		for (Fragment backFragment : FragmentCache){
-			if (null != backFragment
-					&& menuItem.getClass().equals(backFragment.getClass())) {
-				return backFragment;
-			}
-		}
-		return menuItem;
-	}
-    
-
- // 原来的changeFragment  
+    //方法一、 原始的changeFragment，不能保存Fragment 状态
 /*  	private void changeFragment(Fragment targetFragment){
         resideMenu.clearIgnoredViewList();
         getSupportFragmentManager()
@@ -213,6 +177,88 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
                 .setTransitionStyle(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
     }*/
+	
+    
+    //方法二、使用缓存来实现Fragment的状态保存
+     private void changeFragment(Fragment menuItem){
+   		resideMenu.clearIgnoredViewList();
+   		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+   		transaction.setTransitionStyle(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+ 		Log.i("Traget Fragment Status", (menuItem==null)+"");
+ 		Fragment fragment = retrieveFromCache(menuItem);
+ 		transaction.replace(R.id.main_fragment, fragment,"fragmentTag");
+ 		transaction.commit();
+ 	}
+     
+ 	private Fragment retrieveFromCache(Fragment menuItem) {
+ 		Fragment currentFragment = getSupportFragmentManager().findFragmentByTag("fragmentTag");
+ 		//先用当前新的Fragment替换旧的Fragment
+ 		Iterator<Fragment> e = FragmentCache.iterator();    
+ 		while(e.hasNext()){    
+ 		  	Fragment element = e.next();  
+ 			if(currentFragment.getClass().equals(element.getClass())) {
+ 				e.remove();
+ 			}
+ 		}
+ 		FragmentCache.add(currentFragment);
+ 		//再将目标Fragment弹出来
+ 		for (Fragment backFragment : FragmentCache){
+ 			if (null != backFragment
+ 					&& menuItem.getClass().equals(backFragment.getClass())) {
+ 				return backFragment;
+ 			}
+ 		}
+ 		return menuItem;
+ 	}
+    
+    
+	//方法三、使用hide() 和show() 
+/*	private void changeFragment(Fragment targetFragment){
+    	FragmentTransaction fac = getSupportFragmentManager().beginTransaction();
+    	fac.hide(getSupportFragmentManager().findFragmentByTag("fagmentTag"));
+    	fac.show(targetFragment);
+    	fac.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE).commit();
+	}*/
+	
+    
+    //方法四、
+    /*private void changeFragment(Fragment targetFragment,int index){
+    	FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction(); 
+        for (int i = 0; i < 4; i++) { 
+	        Fragment userFragment = fm.findFragmentByTag("fagmentTag"); 
+	        Fragment fragment = null; 
+	        if (userFragment != null){
+	        	fragment = userFragment;
+	        }else {
+	        	fragment = FragmentCache.get(i); //mFragments是存储你的fragment instance的LIST 
+	        }
+	        if (i == index) {
+		        if (!fragment.isAdded()) { 
+		        	ft.add(R.id.main_fragment, fragment,TabTag(i));//第三个参数加Tag 
+		        }
+	        } else { 
+		        if (fragment.isAdded()) { 
+			        ft.remove(fragment); 
+			        ft.addToBackStack(null); 
+		        }
+	        }
+        }
+        ft.commit();
+    }*/
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     // What good method is to access resideMenu
     public ResideMenu getResideMenu(){
         return resideMenu;
