@@ -77,15 +77,15 @@ public class UploadService extends Service {
    }
    
    public void sendMessage(){
-       String send_content="";
+       StringBuilder send_content=new StringBuilder("upload\n");
 		try {
-			send_content = Tools.ReadFromFile("blueToothScan_data");
+			send_content.append(Tools.ReadFromFile("blueToothScan_data"));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		send_content.append("exit\n");
        	out.println(send_content);
-       	updateUI("第"+(intCounter-1)+"次数据已发送->");
+       	updateUI("第"+(intCounter-1)+"次数据已发送\n");
        	Tools.clearFile("blueToothScan_data");
        	Log.i("send status", "第"+(intCounter-1)+"次数据已发送->");
    }
@@ -95,7 +95,6 @@ public class UploadService extends Service {
 			clientSocket.shutdownOutput();
 			clientSocket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
@@ -145,7 +144,7 @@ public class UploadService extends Service {
 		};
 	   	//timer.schedule(timerTask,startDate,mysp.getInt("UploadInterval", 0)*1000);
 		timer.schedule(timerTask,1000,mysp.getInt("UploadInterval", 0)*1000);
-		updateUI("上传进度:\n等待上传->");
+		updateUI("上传进度:\n");
 	}
 	public void stopUpload(){
 		timer.cancel();
@@ -157,18 +156,18 @@ public class UploadService extends Service {
 		updateUI("停止");
 	}
 	private void updateUI(String str){
-		if(!str.equals("停止")&&!str.equals("服务器连接失败")){
+		if(!str.equals("停止")&&!str.equals("服务器连接失败")){//正常情况下更新UI
 			uploadInfo.append(str);
 			if(onProgressListener != null){
 				onProgressListener.onProgress(uploadInfo.toString());
 			}	
-		}else if(!str.equals("服务器连接失败")){
+		}else if(!str.equals("服务器连接失败")){//按下停止的时候更新UI
 			uploadInfo.delete(0,uploadInfo.length());
-			uploadInfo.append("上传进度:\n");
+			//uploadInfo.append("上传进度:\n");
 			if(onProgressListener != null){
 				onProgressListener.onProgress(uploadInfo.toString());
 			}
-		}else {
+		}else {//服务器连接失败时候更新UI
 			uploadInfo.delete(0,uploadInfo.length());
 			uploadInfo.append("上传进度:\n请检查服务器连接");
 			if(onProgressListener != null){

@@ -42,13 +42,11 @@ public class RegistFragment extends Fragment {
 
 	@Override
 	public void onDestroyView() {
-		// TODO Auto-generated method stub
 		super.onDestroyView();
 		Log.i(TAG, "onDestroyView");
 		//取消注册广播
   	    getActivity().unregisterReceiver(receiver);
 	}
-
 	private View RegistParentView;
     private ResideMenu resideMenu;
     private ListView register_listview ;
@@ -56,12 +54,10 @@ public class RegistFragment extends Fragment {
     private Button regist_bt ;
     private StringBuilder detailInfo = new StringBuilder();
 	private TextView Progress_Regist;
-    
     private PrintWriter out = null;
     private Socket clientSocket= null; 
     private SharedPreferences mysp;
     private static final RegistFragment registFragment = new RegistFragment();
-    
     //与蓝牙有关的
 	private BluetoothAdapter registerScanAdapter;	
 	private Map<String,iBeacon> registeResult;
@@ -76,12 +72,10 @@ public class RegistFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		Log.i("OnCreateView","OnCreateView()");
 		if (RegistParentView == null) {
-            // Inflate the layout for this fragment
 	        RegistParentView = inflater.inflate(R.layout.regist, container, false);
 		} else {
             ((ViewGroup)RegistParentView.getParent()).removeView(RegistParentView);
         }
-
         MenuActivity parentActivity = (MenuActivity) getActivity();
         resideMenu = parentActivity.getResideMenu();
         register_listview = (ListView)RegistParentView.findViewById(R.id.register_list);
@@ -89,8 +83,6 @@ public class RegistFragment extends Fragment {
         mysp = getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
 		registerlistItems = new ArrayList<HashMap<String, Object>>();
 		registeResult = new HashMap<String,iBeacon>();
-//		detailInfo.append("注册进度: ");
-//		Progress_Regist.setText(detailInfo);
   	    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
   	    	mBtManager = (BluetoothManager)getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
   	    	registerScanAdapter = mBtManager.getAdapter();
@@ -99,7 +91,6 @@ public class RegistFragment extends Fragment {
 	  		Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 	  		startActivityForResult(enableIntent, 1);
 	  	}
-  	    
   	    //注册广播
   	    IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
   		getActivity().registerReceiver(receiver, filter);
@@ -109,7 +100,6 @@ public class RegistFragment extends Fragment {
         regist_bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //resideMenu.openMenu(ResideMenu.DIRECTION_LEFT);
             	if (!registerScanAdapter.isDiscovering())
 				{
             		regist_bt.setTextColor(Color.GRAY);
@@ -147,7 +137,7 @@ public class RegistFragment extends Fragment {
 			        if (!registeResult.containsKey(address)){
 						iBeacon mBeacon = new iBeacon();
 						mBeacon.setTime(Tools.getCurrentTime());
-				        mBeacon.setName(device.getName());         // 获取设备名称  
+				        mBeacon.setName(device.getName()); // 获取设备名称  
 				        mBeacon.setAddress(address);		
 				        mBeacon.setRSSI(rssi);
 				        registeResult.put(address, mBeacon);
@@ -168,7 +158,6 @@ public class RegistFragment extends Fragment {
 	
 	private void DisPlayRegisterList()
     {
-		 //register_listview.re
 		Log.i(TAG, "Enter DisPlayData()");
         for(String addr:registeResult.keySet())
         {
@@ -194,11 +183,9 @@ public class RegistFragment extends Fragment {
     }
 	
 	protected void sendRegistMessage() {
-		// TODO Auto-generated method stub
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				// TODO Auto-generated method stub
 				if(connect()){
 					mHandler.sendEmptyMessage(0x123);
 				}else {
@@ -225,39 +212,38 @@ public class RegistFragment extends Fragment {
 	};
 	
 	protected void send() {
-		// TODO Auto-generated method stub
-        StringBuilder datas = new StringBuilder();
+        StringBuilder datas = new StringBuilder("regist\n");
         for(String addr:registeResult.keySet()){
-        	datas.append(registeResult.get(addr).getTime()+"\n");
-        	datas.append(registeResult.get(addr).getName()+":    "+addr+"\n");
-        	datas.append("RSSI: "+registeResult.get(addr).getRSSI()+"\n");
+        	datas.append(registeResult.get(addr).getName()+"\n"+addr+"\n");
         }
         Log.i("regist data",datas.toString());
+        datas.append("exit\n");
        	out.println(datas);
        	Log.i("send status", "数据已发送");
        	detailInfo.append("注册信息已发送—>");
     	Progress_Regist.setText(detailInfo);
-       	//regist_bt.setText("注册信息已发送");
     	disconnect();
 	}
 	
 	protected void disconnect() {
       	try {
-			clientSocket.shutdownOutput();
-			clientSocket.close();
+      		if(!clientSocket.isOutputShutdown()){
+      			clientSocket.shutdownOutput();
+      		}
+      		if(!clientSocket.isClosed()){
+      			clientSocket.close();
+      		}
 			detailInfo.append("服务器连接已关闭");
         	Progress_Regist.setText(detailInfo);
         	regist_bt.setText("注册");
         	regist_bt.setTextColor(Color.WHITE);
     		regist_bt.setEnabled(true);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
 	protected boolean connect() {
-		// TODO Auto-generated method stub
    	   try{ 
    		    String ip = mysp.getString("ip", null);
    		    int port = mysp.getInt("port", 0);
@@ -265,7 +251,6 @@ public class RegistFragment extends Fragment {
    		    Log.i("Port: ",port+"");
    		    clientSocket = new Socket(ip,port);
 			Log.i("Socket Connect", "连接成功");
-			//获得输入流
 	   		out = new PrintWriter(new BufferedWriter(  
                    new OutputStreamWriter(clientSocket.getOutputStream(),"UTF-8")),true); 
 	   		Log.i("Socket Connect", "获得输出流句柄");

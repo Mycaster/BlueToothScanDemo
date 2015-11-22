@@ -65,6 +65,7 @@ public class ScanFragment extends Fragment
     private SharedPreferences MyPreferences;
     private SharedPreferences.Editor editor;
     
+    private boolean isButtonStop = false;
     
     private static final ScanFragment scanFragment = new ScanFragment();
     
@@ -110,12 +111,9 @@ public class ScanFragment extends Fragment
   		getActivity().registerReceiver(receiver, filter);
   		filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         getActivity().registerReceiver(receiver, filter);
-		
-		
 		bt_setStartBt.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				// TODO Auto-generated method stub
 				Tools.dateTimePicKDialog("设置起始时间",scaninfo);
 			}
 		});
@@ -131,7 +129,6 @@ public class ScanFragment extends Fragment
 		bt_set.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				// TODO Auto-generated method stub
 				if(!et_scanInterval.getText().toString().equals("")){
 					int scanInterval =Integer.parseInt(et_scanInterval.getText().toString());
 					editor.putInt("ScanInterval", scanInterval);
@@ -151,9 +148,7 @@ public class ScanFragment extends Fragment
 					bt_scan.setTextColor(Color.BLACK);
 					bt_stopscan.setEnabled(true);
 					bt_stopscan.setTextColor(Color.WHITE);
-					Date scanDate = new Date();
-				   	scanDate.setHours(MyPreferences.getInt("StartScanHour", 0));
-				   	scanDate.setMinutes(MyPreferences.getInt("StartScanMin", 0));
+					isButtonStop = false;
 				   	timer = new Timer(true);
 				   	task = new TimerTask(){  
 						 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
@@ -170,6 +165,9 @@ public class ScanFragment extends Fragment
 							 }
 						}
 					 };
+					Date scanDate = new Date();
+				   	scanDate.setHours(MyPreferences.getInt("StartScanHour", 0));
+				   	scanDate.setMinutes(MyPreferences.getInt("StartScanMin", 0));
 					//timer.schedule(task, scanDate, MyPreferences.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
 				   	timer.schedule(task, 1000, MyPreferences.getInt("ScanInterval", 0)*1000); //延时1s后执行，30s执行一次
 				   	isTimerCancled = false;
@@ -183,6 +181,7 @@ public class ScanFragment extends Fragment
 				timer.cancel();
 				task.cancel();
 				isTimerCancled = true;
+				isButtonStop = true;
 				mBtAdapter.cancelDiscovery();
 				count=1;//重新置1
 				bt_scan.setText("开始扫描");
@@ -198,9 +197,7 @@ public class ScanFragment extends Fragment
 		public void handleMessage(Message msg) {
 			if (msg.what == 0x123) {
 				if (mBtAdapter.isDiscovering())
-				{
 					mBtAdapter.cancelDiscovery();
-				}
 				mBtAdapter.startDiscovery();
 				bt_scan.setText("第"+(count-1)+"次扫描进行中");
 			}if(msg.what ==0x124){
@@ -221,7 +218,7 @@ public class ScanFragment extends Fragment
 			if (BluetoothDevice.ACTION_FOUND.equals(action))
 			{
 				BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-				//System.out.println("reveive a device"+device.getName());
+				System.out.println("reveive a device"+device.getName());
 				short rssi = intent.getExtras().getShort(BluetoothDevice.EXTRA_RSSI);
 				if (device.getBondState() != BluetoothDevice.BOND_BONDED)
 				{
@@ -233,16 +230,17 @@ public class ScanFragment extends Fragment
 				        mBeacon.setAddress(address);		
 				        mBeacon.setRSSI(rssi);
 			            mapScanResult.put(address, mBeacon);
-			            //System.out.println("device is saved in mapscanResult");
+			            System.out.println("device is saved in mapscanResult");
 			        }
 				}
 			}
 			else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
 			{
-				System.out.println("第"+(count-1)+"次扫描结束");
-				DisPlayData();
-		        writeData();
-				bt_scan.setText("第"+(count-1)+"次扫描结束");
+				if(!isButtonStop){
+					DisPlayData();
+			        writeData();
+					bt_scan.setText("第"+(count-1)+"次扫描结束");	
+				}
 			}
 		}
 	};
@@ -252,7 +250,7 @@ public class ScanFragment extends Fragment
         for(String addr:mapScanResult.keySet())
         {
             HashMap<String, Object> map = new HashMap<String, Object>();   
-            map.put("time", Tools.getCurrentTime());
+            map.put("time", mapScanResult.get(addr).getTime());
             map.put("name", mapScanResult.get(addr).getName()+"   ");
             map.put("address", addr);
             map.put("rssi","RSSI: "+mapScanResult.get(addr).getRSSI());
@@ -275,8 +273,8 @@ public class ScanFragment extends Fragment
         StringBuilder datas = new StringBuilder();
         for(String addr:mapScanResult.keySet()){
         	datas.append(mapScanResult.get(addr).getTime()+"\n");
-        	datas.append(mapScanResult.get(addr).getName()+":    "+addr+"\n");
-        	datas.append("RSSI: "+mapScanResult.get(addr).getRSSI()+"\n");
+        	datas.append(addr+"\n");
+        	datas.append(mapScanResult.get(addr).getRSSI()+"\n");
         }
         Tools.writeToFile("blueToothScan_data", datas.toString());
         mapScanResult.clear();

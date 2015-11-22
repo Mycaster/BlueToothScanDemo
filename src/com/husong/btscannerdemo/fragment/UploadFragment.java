@@ -76,7 +76,6 @@ public class UploadFragment extends Fragment{
     	detail_tx = (TextView)rootView.findViewById(R.id.detail_tx);
     	progress_detail = (TextView)rootView.findViewById(R.id.uploadDetail);
     	Tools.updateDisplayInfo(detail_tx);
-
     	bt_upStart.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
@@ -86,7 +85,6 @@ public class UploadFragment extends Fragment{
 		});
     	
     	bt_upEnd.setOnClickListener(new OnClickListener() {
-			
 			@Override
 			public void onClick(View arg0) {
 				Tools.dateTimePicKDialog("设置结束上传时间",detail_tx);
@@ -127,6 +125,7 @@ public class UploadFragment extends Fragment{
 				uploadInfo.delete(0, uploadInfo.length());
 				uploadInfo.append("上传进度:\n");
 				progress_detail.setText(uploadInfo);
+				
                 bt_Send.setEnabled(false);
                 bt_Send.setTextColor(Color.GRAY);
                 bt_Stop.setEnabled(true);
@@ -174,7 +173,7 @@ public class UploadFragment extends Fragment{
 	private Handler mHandler = new Handler(){
 		public void handleMessage(Message msg) {
 			String text = msg.obj.toString();
-			if(text.equals("上传进度:\n")||text.equals("上传进度:\n请检查服务器连接")){
+			if(text.equals("")||text.equals("上传进度:\n请检查服务器连接")){
                 bt_Send.setEnabled(true);
                 bt_Send.setTextColor(Color.WHITE);
                 bt_Stop.setEnabled(false);

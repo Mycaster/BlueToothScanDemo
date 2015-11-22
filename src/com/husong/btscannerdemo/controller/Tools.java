@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import com.husong.btscannerdemo.R;
@@ -25,16 +26,14 @@ public class Tools {
 	private static MenuActivity ma =  MenuActivity.getInstance();
 	private static SharedPreferences MyPreferences = ma.getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
     private static SharedPreferences.Editor editor = MyPreferences.edit();
-	
+    
     public static  void dateTimePicKDialog(final String title,final TextView info) {
-		
 		LinearLayout dateTimeLayout = (LinearLayout)ma.getLayoutInflater().inflate(R.layout.timepicker, null);
 		final TimePicker timepicker = (TimePicker) dateTimeLayout.findViewById(R.id.timepicker);
 		timepicker.setIs24HourView(true);
 		timepicker.setOnTimeChangedListener(new OnTimeChangedListener() {
 			@Override
 			public void onTimeChanged(TimePicker arg0, int arg1, int arg2) {
-				// TODO Auto-generated method stub
 			}
 		});
 		AlertDialog ad = new AlertDialog.Builder(ma)
@@ -71,7 +70,6 @@ public class Tools {
 				        	Log.i("editor2", "commit");
 				        	updateDisplayInfo(info);
 						}
-			        	
 						Log.i("设置", "设置");
 					}
 				}).setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -81,32 +79,55 @@ public class Tools {
 	}
 	
 	public static void updatescanDetail(TextView scaninfo) {
-		// TODO Auto-generated method stub
-    	int s_hour = MyPreferences.getInt("StartScanHour", 0);
-    	int s_min = MyPreferences.getInt("StartScanMin",0);
-    	int e_hour = MyPreferences.getInt("EndScanHour", 0);
-    	int e_min = MyPreferences.getInt("EndScanMin", 0);
+    	int ss_hour = MyPreferences.getInt("StartScanHour", 0);
+    	int ss_min = MyPreferences.getInt("StartScanMin",0);
+    	int se_hour = MyPreferences.getInt("EndScanHour", 0);
+    	int se_min = MyPreferences.getInt("EndScanMin", 0);
     	int s_interval = MyPreferences.getInt("ScanInterval", 0);
-    	int TotalTime = Tools.calculateTime(s_hour,s_min,e_hour,e_min);
+    	int TotalTime = Tools.calculateTime(ss_hour,ss_min,se_hour,se_min);
     	int s_count = TotalTime*60/s_interval;
     	editor.putInt("ScanCount", s_count);
     	editor.commit();
-    	scaninfo.setText("当前设置为: \n扫描时间:  "+s_hour+":"+s_min+"—"+e_hour+":"+e_min+
-				"\n扫描间隔: "+s_interval+	"秒\n扫描次数: "+s_count);
+    	String time="";
+    	if(ss_min<10 && se_min>=10){
+    		time=ss_hour+":0"+ss_min+"—"+se_hour+":"+se_min;
+    	}else if(ss_min<10 && se_min<10){
+    		time=ss_hour+":0"+ss_min+"—"+se_hour+":0"+se_min;
+    	}else if(ss_min>=10&&se_min<10){
+    		time=ss_hour+":"+ss_min+"—"+se_hour+":0"+se_min;
+    	}else if(ss_min>=10&&se_min>=10){
+    		time=ss_hour+":"+ss_min+"—"+se_hour+":"+se_min;
+    	}
+    	scaninfo.setText("当前设置为: " +
+    			"\n扫描时间:  "+time+
+				"\n扫描间隔: "+s_interval+	"秒" +
+				"\n扫描次数: "+s_count);
 	}
 	
 	public static void updateDisplayInfo(TextView detail_tx) {
-		int TotalTime = Tools.calculateTime(MyPreferences.getInt("StartUploadHour", 0),MyPreferences.getInt("StartUploadMin",0),
-			     					  MyPreferences.getInt("EndUploadHour", 0),MyPreferences.getInt("EndUploadMin", 0));
+    	int us_hour = MyPreferences.getInt("StartUploadHour", 0);
+    	int us_min = MyPreferences.getInt("StartUploadMin",0);
+    	int ue_hour = MyPreferences.getInt("EndUploadHour", 0);
+    	int ue_min = MyPreferences.getInt("EndUploadMin", 0);
+		int TotalTime = Tools.calculateTime(us_hour,us_min,ue_hour,ue_min);
 		editor.putInt("UploadCount", TotalTime*60/(MyPreferences.getInt("UploadInterval", 0)));
     	editor.commit();
-		String displayInfo = "  当前设置为： \n  IP地址:		"+MyPreferences.getString("ip",null)+
-					"\n  端口号:		"+MyPreferences.getInt("port", 0)+
-					"\n  时间间隔:		"+MyPreferences.getInt("UploadInterval", 0)+"秒"+
-					"\n  上传时间:		"+MyPreferences.getInt("StartUploadHour", 0)+
-							": "+MyPreferences.getInt("StartUploadMin", 0)+"—"+MyPreferences.getInt("EndUploadHour", 0)+
-							": "+MyPreferences.getInt("EndUploadMin", 0)+
-					"\n  上传次数:		"+MyPreferences.getInt("UploadCount", 0);
+    	String time="";
+    	if(us_min<10&&ue_min>=10){
+    		time=us_hour+":0"+us_min+"—"+ue_hour+":"+ue_min;
+    	}else if(us_min<10&&ue_min<10){
+    		time=us_hour+":0"+us_min+"—"+ue_hour+":0"+ue_min;
+    	}else if(us_min>=10&&ue_min<10){
+    		time=us_hour+":"+us_min+"—"+ue_hour+":0"+ue_min;
+    	}else if(us_min>=10&&ue_min>=10){
+    		time=us_hour+":"+us_min+"—"+ue_hour+":"+ue_min;
+    	}
+		String displayInfo = "当前设置为： " +
+				"\n  IP地址:		"+MyPreferences.getString("ip",null)+
+				"\n  端口号:		"+MyPreferences.getInt("port", 0)+
+				"\n  时间间隔:		"+MyPreferences.getInt("UploadInterval", 0)+"秒"+
+				"\n  上传时间:		"+time+
+				"\n  上传次数:		"+MyPreferences.getInt("UploadCount", 0);
 		detail_tx.setText(displayInfo);
 	}
 
@@ -154,8 +175,9 @@ public class Tools {
 	 */
 	public static String getCurrentTime(){
 		Date date=new Date();
-		SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		return df.format(date);
+
 	}
 
 	/*
@@ -163,27 +185,11 @@ public class Tools {
 	 */
    public static int calculateTime(int StartHour,int StartMin,int EndHour,int EndMin){
 	   if(StartHour <= EndHour){
-		   if(EndMin >= StartMin){
-			   return (EndHour-StartHour)*60+ EndMin-StartMin;
-		   }else{
-			   return (EndHour-StartHour)*60+ StartMin-EndMin;
-		   }
+		   if((StartHour==EndHour)&&StartMin>EndMin)
+			   return 0;
+		   return (EndHour-StartHour)*60+ EndMin-StartMin;
 	   }
 	   return 0; 
-   }
-   
-   /*
-    * 格式化时间
-    */
-   public static String format(int a1,int a2,int a3,int a4){
-		Date date1= new Date();
-		Date date2 = new Date();
-		date1.setHours(a1);
-		date1.setMinutes(a2);
-		date2.setHours(a3);
-		date2.setMinutes(a4);
-		SimpleDateFormat df=new SimpleDateFormat("HH:MM");
-		return df.format(date1)+"-"+df.format(date2);
    }
 
 }
