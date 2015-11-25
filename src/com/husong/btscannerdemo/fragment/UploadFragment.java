@@ -1,8 +1,11 @@
 package com.husong.btscannerdemo.fragment;
 
+import java.util.Date;
+
 import com.husong.btscannerdemo.R;
 import com.husong.btscannerdemo.controller.Tools;
 import com.husong.btscannerdemo.controller.UploadService;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -23,6 +26,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class UploadFragment extends Fragment{
 	private View rootView;
@@ -119,20 +123,27 @@ public class UploadFragment extends Fragment{
 		});
         
         bt_Send.setOnClickListener(new OnClickListener() {
+			@SuppressWarnings("deprecation")
 			@Override
 			public void onClick(View arg0) {
-				//改变界面状态
-				uploadInfo.delete(0, uploadInfo.length());
-				uploadInfo.append("上传进度:\n");
-				progress_detail.setText(uploadInfo);
-				
-                bt_Send.setEnabled(false);
-                bt_Send.setTextColor(Color.GRAY);
-                bt_Stop.setEnabled(true);
-                bt_Stop.setTextColor(Color.WHITE);
-		        //开始上传
-		        myservice.startUpload();
-                Log.i("UploadFragment", "开始上传");
+				Date startDate =new Date();
+			    startDate.setHours(MyPreferences.getInt("StartUploadHour", 0));
+			    startDate.setMinutes(MyPreferences.getInt("StartUploadMin", 0));
+				if(startDate.after(new Date())){
+					//改变界面状态
+					uploadInfo.delete(0, uploadInfo.length());
+					uploadInfo.append("上传进度:\n");
+					progress_detail.setText(uploadInfo);
+	                bt_Send.setEnabled(false);
+	                bt_Send.setTextColor(Color.GRAY);
+	                bt_Stop.setEnabled(true);
+	                bt_Stop.setTextColor(Color.WHITE);
+			        //开始上传
+			        myservice.startUpload();
+	                Log.i("UploadFragment", "开始上传");
+				}else {
+					Toast.makeText(getActivity(), "请设置在当前时间之后执行该操作！", Toast.LENGTH_LONG).show();
+				}
 			}
 		});
         
@@ -170,8 +181,9 @@ public class UploadFragment extends Fragment{
 		}
 	};
 	
+	@SuppressLint("HandlerLeak") 
 	private Handler mHandler = new Handler(){
-		public void handleMessage(Message msg) {
+		public void handleMessage(Message msg){
 			String text = msg.obj.toString();
 			if(text.equals("")||text.equals("上传进度:\n请检查服务器连接")){
                 bt_Send.setEnabled(true);
@@ -188,7 +200,6 @@ public class UploadFragment extends Fragment{
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		Log.i("OnSaveInstanceState","OnSaveInstanceState()");
-		//outState.putBundle(WINDOW_HIERARCHY_TAG, mWindow.saveHierarchyState());
 	}
 
 	@Override

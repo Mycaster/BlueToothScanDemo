@@ -28,16 +28,11 @@ public class UploadService extends Service {
    private SharedPreferences mysp;
    
    private static int intCounter=1;
-   private int uploadcount = 15;
-   private Date startDate =new Date();
    
    @Override
    public void onCreate(){
        super.onCreate();
        mysp = getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
-       uploadcount = mysp.getInt("UploadCount", 0);
-	   startDate.setHours(mysp.getInt("StartUploadHour", 0));
-	   startDate.setMinutes(mysp.getInt("StartUploadMin", 0));
        Log.i("Create Service", "onCreate");
 	   Log.i(TAG, "等待定时执行上传任务");
    }
@@ -79,14 +74,14 @@ public class UploadService extends Service {
    public void sendMessage(){
        StringBuilder send_content=new StringBuilder("upload\n");
 		try {
-			send_content.append(Tools.ReadFromFile("blueToothScan_data"));
+			send_content.append(Tools.ReadFromFile("blueToothScan_data.txt"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		send_content.append("exit\n");
        	out.println(send_content);
        	updateUI("第"+(intCounter-1)+"次数据已发送\n");
-       	Tools.clearFile("blueToothScan_data");
+       	Tools.clearFile("blueToothScan_data.txt");
        	Log.i("send status", "第"+(intCounter-1)+"次数据已发送->");
    }
    
@@ -117,11 +112,12 @@ public class UploadService extends Service {
 		}
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void startUpload() {
 		timer = new Timer(true);
 		timerTask = new TimerTask(){  
 			 public void run() {  //另开的线程，不在UI线程里
-				 if(intCounter <= uploadcount){
+				 if(intCounter <= mysp.getInt("UploadCount", 0)){
 					if(connect()){
 						updateUI("服务器连接成功->");
 						++intCounter;
@@ -142,10 +138,15 @@ public class UploadService extends Service {
 				 }
 			 }
 		};
-	   	//timer.schedule(timerTask,startDate,mysp.getInt("UploadInterval", 0)*1000);
-		timer.schedule(timerTask,1000,mysp.getInt("UploadInterval", 0)*1000);
+		Date startDate =new Date();
+	    startDate.setHours(mysp.getInt("StartUploadHour", 0));
+	    startDate.setMinutes(mysp.getInt("StartUploadMin", 0));
+	    Log.i("上传时间",startDate.getHours()+":"+startDate.getMinutes());
+	    timer.schedule(timerTask,startDate,mysp.getInt("UploadInterval", 0)*1000);
+		//timer.scheduleAtFixedRate(timerTask,1000,mysp.getInt("UploadInterval", 0)*1000);
 		updateUI("上传进度:\n");
 	}
+	
 	public void stopUpload(){
 		timer.cancel();
 		timerTask.cancel();

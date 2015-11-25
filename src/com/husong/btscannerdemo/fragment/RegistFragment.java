@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -36,7 +37,6 @@ import android.widget.Toast;
 import com.husong.btscannerdemo.R;
 import com.husong.btscannerdemo.bean.iBeacon;
 import com.husong.btscannerdemo.controller.Tools;
-import com.special.ResideMenu.ResideMenu;
 
 public class RegistFragment extends Fragment {
 
@@ -48,7 +48,6 @@ public class RegistFragment extends Fragment {
   	    getActivity().unregisterReceiver(receiver);
 	}
 	private View RegistParentView;
-    private ResideMenu resideMenu;
     private ListView register_listview ;
     private String TAG = "HomeFragment";
     private Button regist_bt ;
@@ -76,8 +75,6 @@ public class RegistFragment extends Fragment {
 		} else {
             ((ViewGroup)RegistParentView.getParent()).removeView(RegistParentView);
         }
-        MenuActivity parentActivity = (MenuActivity) getActivity();
-        resideMenu = parentActivity.getResideMenu();
         register_listview = (ListView)RegistParentView.findViewById(R.id.register_list);
         Progress_Regist = (TextView)RegistParentView.findViewById(R.id.Progress_Regist);
         mysp = getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
@@ -195,6 +192,7 @@ public class RegistFragment extends Fragment {
 		}).start();
 	}
 
+	@SuppressLint("HandlerLeak") 
 	private Handler mHandler=new Handler(){
 		public void handleMessage(Message msg) {
 			if (msg.what == 0x123) {

@@ -7,11 +7,9 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import com.husong.btscannerdemo.R;
-import com.husong.btscannerdemo.fragment.MenuActivity;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -21,6 +19,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.TimePicker.OnTimeChangedListener;
+
+import com.husong.btscannerdemo.R;
+import com.husong.btscannerdemo.fragment.MenuActivity;
 
 public class Tools {
 	private static MenuActivity ma =  MenuActivity.getInstance();
@@ -85,7 +86,7 @@ public class Tools {
     	int se_min = MyPreferences.getInt("EndScanMin", 0);
     	int s_interval = MyPreferences.getInt("ScanInterval", 0);
     	int TotalTime = Tools.calculateTime(ss_hour,ss_min,se_hour,se_min);
-    	int s_count = TotalTime*60/s_interval;
+    	int s_count = TotalTime*60/s_interval+1;
     	editor.putInt("ScanCount", s_count);
     	editor.commit();
     	String time="";
@@ -98,10 +99,7 @@ public class Tools {
     	}else if(ss_min>=10&&se_min>=10){
     		time=ss_hour+":"+ss_min+"—"+se_hour+":"+se_min;
     	}
-    	scaninfo.setText("当前设置为: " +
-    			"\n扫描时间:  "+time+
-				"\n扫描间隔: "+s_interval+	"秒" +
-				"\n扫描次数: "+s_count);
+    	scaninfo.setText("扫描时间:  "+time+"\n扫描间隔: "+s_interval+	"秒" +"\n扫描次数: "+s_count);
 	}
 	
 	public static void updateDisplayInfo(TextView detail_tx) {
@@ -109,8 +107,10 @@ public class Tools {
     	int us_min = MyPreferences.getInt("StartUploadMin",0);
     	int ue_hour = MyPreferences.getInt("EndUploadHour", 0);
     	int ue_min = MyPreferences.getInt("EndUploadMin", 0);
+    	int u_interval = MyPreferences.getInt("UploadInterval", 0);
 		int TotalTime = Tools.calculateTime(us_hour,us_min,ue_hour,ue_min);
-		editor.putInt("UploadCount", TotalTime*60/(MyPreferences.getInt("UploadInterval", 0)));
+		int u_count = TotalTime*60/u_interval+1;
+		editor.putInt("UploadCount", u_count);
     	editor.commit();
     	String time="";
     	if(us_min<10&&ue_min>=10){
@@ -122,8 +122,8 @@ public class Tools {
     	}else if(us_min>=10&&ue_min>=10){
     		time=us_hour+":"+us_min+"—"+ue_hour+":"+ue_min;
     	}
-		String displayInfo = "当前设置为： " +
-				"\n  IP地址:		"+MyPreferences.getString("ip",null)+
+		String displayInfo = 
+				"  IP地址:		"+MyPreferences.getString("ip",null)+
 				"\n  端口号:		"+MyPreferences.getInt("port", 0)+
 				"\n  时间间隔:		"+MyPreferences.getInt("UploadInterval", 0)+"秒"+
 				"\n  上传时间:		"+time+
@@ -149,6 +149,7 @@ public class Tools {
              sb.append(temp+"\n");
              temp=br.readLine();
          }
+         br.close();
          return sb.toString();
      }
 	
@@ -173,6 +174,7 @@ public class Tools {
 	/*
 	 * 获取系统当前时间
 	 */
+	@SuppressLint("SimpleDateFormat") 
 	public static String getCurrentTime(){
 		Date date=new Date();
 		SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

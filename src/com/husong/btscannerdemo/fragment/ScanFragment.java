@@ -9,6 +9,7 @@ import java.util.TimerTask;
 import com.husong.btscannerdemo.R;
 import com.husong.btscannerdemo.bean.iBeacon;
 import com.husong.btscannerdemo.controller.Tools;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -34,6 +35,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ScanFragment extends Fragment
 {
@@ -43,11 +45,9 @@ public class ScanFragment extends Fragment
 	
 	@Override
 	public void onDestroyView() {
-		// TODO Auto-generated method stub
 		super.onDestroyView();
 		getActivity().unregisterReceiver(receiver);
 	}
-	
 	private View ScanrootView;
 	private EditText et_scanInterval;//输入的扫描间隔
 	private TextView scaninfo;
@@ -140,37 +140,48 @@ public class ScanFragment extends Fragment
 		});
 		
 		bt_scan.setOnClickListener(new OnClickListener() {
+			@SuppressWarnings("deprecation")
 			@Override
 			public void onClick(View v) {
-				if(!mBtAdapter.isDiscovering()&&isTimerCancled){
-					bt_scan.setText("正在扫描...");
-					bt_scan.setEnabled(false);
-					bt_scan.setTextColor(Color.BLACK);
-					bt_stopscan.setEnabled(true);
-					bt_stopscan.setTextColor(Color.WHITE);
-					isButtonStop = false;
-				   	timer = new Timer(true);
-				   	task = new TimerTask(){  
-						 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
-							 if(count <= MyPreferences.getInt("ScanCount", 0)){
-								mHandler.sendEmptyMessage(0x123);
-								Log.i("scan ", "第"+count+"次：开始扫描");
-								++count;
-							 }else {
-								 mHandler.sendEmptyMessage(0x124);
-								 timer.cancel();
-								 isTimerCancled=true;
-								 count=1;
-								 Log.i("scan","timer is cancled");
-							 }
-						}
-					 };
-					Date scanDate = new Date();
-				   	scanDate.setHours(MyPreferences.getInt("StartScanHour", 0));
-				   	scanDate.setMinutes(MyPreferences.getInt("StartScanMin", 0));
-					//timer.schedule(task, scanDate, MyPreferences.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
-				   	timer.schedule(task, 1000, MyPreferences.getInt("ScanInterval", 0)*1000); //延时1s后执行，30s执行一次
-				   	isTimerCancled = false;
+				Date scanDate = new Date();
+			   	scanDate.setHours(MyPreferences.getInt("StartScanHour", 0));
+			   	scanDate.setMinutes(MyPreferences.getInt("StartScanMin", 0));
+			   	if(scanDate.after(new Date())){//如果设置的时间在当前时间之后才会执行
+					if(!mBtAdapter.isDiscovering()&&isTimerCancled){
+						bt_scan.setText("准备扫描...");
+						bt_scan.setEnabled(false);
+						bt_scan.setTextColor(Color.BLACK);
+						bt_stopscan.setEnabled(true);
+						bt_stopscan.setTextColor(Color.WHITE);
+						isButtonStop = false;
+					   	timer = new Timer(true);
+					   	task = new TimerTask(){  
+							 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
+								 if(count <= MyPreferences.getInt("ScanCount", 0)){
+									Log.i("Thread Id:",Thread.currentThread().getId()+"");
+									Log.i("scan ", "第"+count+"次：开始扫描");
+									if (mBtAdapter.isDiscovering())
+										mBtAdapter.cancelDiscovery();
+									mBtAdapter.startDiscovery();
+									Log.i("mBtAdapter.isDiscovering():",mBtAdapter.isDiscovering()+"");
+									Log.i("Message:0x123","discovery 开始");
+									mHandler.sendEmptyMessage(0x123);
+									++count;
+								 }else {
+									 mHandler.sendEmptyMessage(0x124);
+									 timer.cancel();
+									 isTimerCancled=true;
+									 count=1;
+									 Log.i("scan","timer is cancled");
+								 }
+							}
+						 };
+						timer.scheduleAtFixedRate(task, scanDate, MyPreferences.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
+					   	//timer.scheduleAtFixedRate(task, 1000, MyPreferences.getInt("ScanInterval", 0)*1000); //延时1s后执行，30s执行一次
+					   	isTimerCancled = false;
+					}
+				}else {
+					Toast.makeText(getActivity(), "请设置在当前时间之后执行该操作！", Toast.LENGTH_LONG).show();
 				}
 			}
 		});
@@ -193,12 +204,10 @@ public class ScanFragment extends Fragment
 		});
     	return ScanrootView;
     }    
+	@SuppressLint("HandlerLeak") 
 	private Handler mHandler=new Handler(){
 		public void handleMessage(Message msg) {
 			if (msg.what == 0x123) {
-				if (mBtAdapter.isDiscovering())
-					mBtAdapter.cancelDiscovery();
-				mBtAdapter.startDiscovery();
 				bt_scan.setText("第"+(count-1)+"次扫描进行中");
 			}if(msg.what ==0x124){
 				bt_scan.setText("开始扫描");
@@ -276,7 +285,8 @@ public class ScanFragment extends Fragment
         	datas.append(addr+"\n");
         	datas.append(mapScanResult.get(addr).getRSSI()+"\n");
         }
-        Tools.writeToFile("blueToothScan_data", datas.toString());
+        Tools.writeToFile("blueToothScan_data.txt", datas.toString());
+        Tools.writeToFile("totalData.txt", datas.toString());
         mapScanResult.clear();
     }
 }
