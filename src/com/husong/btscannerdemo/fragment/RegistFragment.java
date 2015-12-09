@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,8 +29,10 @@ import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
@@ -40,6 +43,10 @@ import com.husong.btscannerdemo.controller.Tools;
 
 public class RegistFragment extends Fragment {
 
+	/*
+	 * @see android.support.v4.app.Fragment#onDestroyView()
+	 * 一旦切换出此Fragment ，则会调用onDestoryView,此时应取消广播的注册，以免和扫描界面的广播冲突(non-Javadoc)
+	 */
 	@Override
 	public void onDestroyView() {
 		super.onDestroyView();
@@ -47,37 +54,61 @@ public class RegistFragment extends Fragment {
 		//取消注册广播
   	    getActivity().unregisterReceiver(receiver);
 	}
+	
 	private View RegistParentView;
     private ListView register_listview ;
     private String TAG = "HomeFragment";
     private Button regist_bt ;
+    private Button setport_bt,connect_bt;
+    private EditText regist_port;
+    private TextView Progress_Regist;
+
     private StringBuilder detailInfo = new StringBuilder();
-	private TextView Progress_Regist;
-    private PrintWriter out = null;
-    private Socket clientSocket= null; 
-    private SharedPreferences mysp;
+    private static PrintWriter out = null;
+    private static Socket clientSocket= null; 
+    private SharedPreferences config_sp;
+    private SharedPreferences.Editor config_editor;
     private static final RegistFragment registFragment = new RegistFragment();
+    
     //与蓝牙有关的
 	private BluetoothAdapter registerScanAdapter;	
-	private Map<String,iBeacon> registeResult;
-    private ArrayList<HashMap<String, Object>> registerlistItems;    //存放文字、图片信息
-    private SimpleAdapter registerlistAdapter;         		 //适配器
+	private Map<String,iBeacon> registeResult;//扫描结果
+    private ArrayList<HashMap<String, Object>> registerlistItems;//存放文字、图片信息
+    private SimpleAdapter registerlistAdapter;//ListView适配器
 	private BluetoothManager mBtManager;
+	private static boolean isConnected = false;
+
 	
-	public static RegistFragment getInstance(){
-		return registFragment;
-	}
+	/*
+	 * 每次切换至该页面时均会调用onCreateView()
+	 * @see android.support.v4.app.Fragment#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)
+	 */
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		Log.i("OnCreateView","OnCreateView()");
+		//保存View的视图，保证Fragment切换时,View的状态可以恢复
 		if (RegistParentView == null) {
 	        RegistParentView = inflater.inflate(R.layout.regist, container, false);
 		} else {
             ((ViewGroup)RegistParentView.getParent()).removeView(RegistParentView);
         }
+		
+		/*
+		 * 控件初始化:
+		 * setport_bt:设置端口的按钮
+		 * connect_bt:连接服务器的按钮
+		 * regist_bt: 注册的按钮
+		 */
+		setport_bt = (Button)RegistParentView.findViewById(R.id.setPortBt);
+		connect_bt = (Button)RegistParentView.findViewById(R.id.ConnectServer);
+        regist_bt = (Button)RegistParentView.findViewById(R.id.btn_open_menu);
+		regist_port = (EditText)RegistParentView.findViewById(R.id.regist_port);
         register_listview = (ListView)RegistParentView.findViewById(R.id.register_list);
         Progress_Regist = (TextView)RegistParentView.findViewById(R.id.Progress_Regist);
-        mysp = getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
+        
+        //
+        config_sp = getActivity().getSharedPreferences("config",Context.MODE_MULTI_PROCESS);
+        config_editor = config_sp.edit();
 		registerlistItems = new ArrayList<HashMap<String, Object>>();
 		registeResult = new HashMap<String,iBeacon>();
   	    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -93,30 +124,127 @@ public class RegistFragment extends Fragment {
   		getActivity().registerReceiver(receiver, filter);
   		filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         getActivity().registerReceiver(receiver, filter);
-        regist_bt = (Button)RegistParentView.findViewById(R.id.btn_open_menu);
+        
+        setport_bt.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				if(!regist_port.getText().toString().equals("")){
+					int port =Integer.parseInt(regist_port.getText().toString());
+					config_editor.putInt("RegistPort", port);
+					config_editor.commit();
+					regist_port.setHint("当前注册端口为："+port);
+					regist_port.setText("");
+				}
+			}
+		});
+        
+        connect_bt.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				connect_bt.setTextColor(Color.GRAY);
+				connect_bt.setEnabled(false);
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						connect();
+						if(isConnected){
+							mHandler.sendEmptyMessage(0x123);
+						}else {
+							mHandler.sendEmptyMessage(0x124);
+						}
+					}
+				}).start();
+			}
+		});
+        
+
         regist_bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-            	if (!registerScanAdapter.isDiscovering())
-				{
-            		regist_bt.setTextColor(Color.GRAY);
-            		regist_bt.setText("正在注册");
-            		regist_bt.setEnabled(false);
-            		detailInfo.delete(0, detailInfo.length());
-                	detailInfo.append("注册进度: ");
-                	detailInfo.append("开始扫描—>正在扫描—>");
-                	Progress_Regist.setText(detailInfo);
-                	registeResult.clear();
-                	registerlistItems.removeAll(registerlistItems);
-                	registerScanAdapter.startDiscovery();
-				}else {
-					Toast.makeText(getActivity(), "正在注册请稍后...", Toast.LENGTH_LONG).show();
-				}
+            	if(clientSocket==null){
+            		Toast.makeText(getActivity(), "说好的先连接服务器呢", Toast.LENGTH_LONG).show();
+            	}else{
+            		if (!registerScanAdapter.isDiscovering())
+    				{
+                		regist_bt.setTextColor(Color.GRAY);
+                		regist_bt.setText("正在注册");
+                		regist_bt.setEnabled(false);
+                		detailInfo.delete(0, detailInfo.length());
+                    	detailInfo.append("注册进度: ");
+                    	detailInfo.append("正在扫描—>");
+                    	Progress_Regist.setText(detailInfo);
+                    	registeResult.clear();
+                    	registerlistItems.removeAll(registerlistItems);
+                    	registerScanAdapter.startDiscovery();
+    				}else {
+    					Toast.makeText(getActivity(), "正在注册请稍后...", Toast.LENGTH_LONG).show();
+    				}
+            	}
             }
         });
         return RegistParentView;
     }
-
+	
+	protected void connect() {
+	   	   try{ 
+	   		    String ip = config_sp.getString("ip", null);
+	   		    int port = config_sp.getInt("RegistPort", 0);
+	   		    Log.i("Address: ",ip+":"+port);
+	   		    mHandler.sendEmptyMessage(0x125);
+	   		    clientSocket = new Socket(ip,port);
+	   		    clientSocket.setKeepAlive(true);
+				isConnected = true;
+				out = new PrintWriter(new BufferedWriter(
+				        new OutputStreamWriter(clientSocket.getOutputStream(),"UTF-8")),true);
+				Log.i("Socket Connect", "连接成功");
+	       }catch (UnknownHostException e){
+	           e.printStackTrace();
+				Log.i("Socket Connect", "连接失败1");
+	       }catch (IOException e){
+	           e.printStackTrace();
+				Log.i("Socket Connect", "连接失败2");
+	       }
+	}
+	
+	//向服务器发送数据
+	protected void send(String datas) throws SocketException {
+        if(clientSocket.isConnected()&&!clientSocket.isClosed()){
+        	if(!isServerClose(clientSocket)){
+        		out.println(datas);
+            	Log.i("send status", "数据已发送");
+               	detailInfo.append("注册信息已发送"); 
+            	Progress_Regist.setText(detailInfo);
+        	}
+        }else {
+        	Progress_Regist.setText("检查服务器连接！");
+        	connect_bt.setText("连接失败,请重新连接");
+			connect_bt.setTextColor(Color.WHITE);
+			connect_bt.setEnabled(true);
+        }
+    	regist_bt.setText("注册");
+    	regist_bt.setTextColor(Color.WHITE);
+		regist_bt.setEnabled(true);
+	}
+	
+	//判断服务器连接状态
+	public Boolean isServerClose(Socket socket){  
+	   try{ 
+		    socket.sendUrgentData(0xFF);//发送紧急数据，默认情况下，服务器端没有开启紧急数据处理，不影响正常通信  
+		    return false;  
+	   }catch (SocketException e){
+			e.printStackTrace();
+        	Progress_Regist.setText("检查服务器连接！");
+        	connect_bt.setText("连接失败,请重新连接");
+			connect_bt.setTextColor(Color.WHITE);
+			connect_bt.setEnabled(true);
+			return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return true;
+		}
+	}
+	
+	//广播接受扫描到的蓝牙设备
 	private final BroadcastReceiver receiver = new BroadcastReceiver()
 	{
 		@Override
@@ -145,17 +273,45 @@ public class RegistFragment extends Fragment {
 			else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
 			{
 				System.out.println("discovery is finished");
-				detailInfo.append("扫描结束—>正在连接服务器—>");
+				detailInfo.append("扫描结束—>正在发送注册信息->");
             	Progress_Regist.setText(detailInfo);
-				sendRegistMessage();
+            	StringBuilder datas = new StringBuilder("regist\n");
+                for(String addr:registeResult.keySet()){
+                	datas.append(registeResult.get(addr).getName()+"\n"+addr+"\n");
+                }
+                Log.i("regist data",datas.toString());
+                datas.append("exit");
+            	try {
+					send(datas.toString());
+				} catch (SocketException e) {
+					e.printStackTrace();
+				}
 				DisPlayRegisterList();
 			}
 		}
 	};
+	//用于主线程的ＵＩ更新
+	@SuppressLint("HandlerLeak") 
+	private  Handler mHandler=new Handler(){
+		public void handleMessage(Message msg) {
+			if (msg.what == 0x123) {
+				connect_bt.setText("服务器连接成功");
+				connect_bt.setTextColor(Color.GRAY);
+				connect_bt.setEnabled(false);
+		        Log.i("Current Thread ID",""+Thread.currentThread().getId());
+			}else if(msg.what==0x124){
+				connect_bt.setText("连接失败,请重新连接");
+				connect_bt.setTextColor(Color.WHITE);
+				connect_bt.setEnabled(true);
+			}else if(msg.what==0x125){
+				connect_bt.setText("正在连接");
+			}
+		}
+	};
 	
+	//将扫描结果用listView显示出来
 	private void DisPlayRegisterList()
     {
-		Log.i(TAG, "Enter DisPlayData()");
         for(String addr:registeResult.keySet())
         {
             HashMap<String, Object> map = new HashMap<String, Object>();   
@@ -165,7 +321,6 @@ public class RegistFragment extends Fragment {
             map.put("rssi","RSSI: "+registeResult.get(addr).getRSSI());
             map.put("ItemImage",R.drawable.bluetooth);   //图片   
             registerlistItems.add(map);
-            Log.i(TAG, map.get("name")+"");
         }
         //生成适配器的Item和动态数组对应的元素   
         registerlistAdapter = new SimpleAdapter(
@@ -175,92 +330,11 @@ public class RegistFragment extends Fragment {
                 new String[] {"time","name","address","rssi","ItemImage"},     //动态数组与ImageItem对应的子项         
                 new int[] {R.id.address, R.id.major,R.id.minor,R.id.rssi,R.id.ItemImage}//list_item.xml布局文件里面的一个ImageView的ID,一个TextView 的ID  
         );
-        Log.i(TAG,"registerlistAdapter 数据已装载");
         register_listview.setAdapter(registerlistAdapter);
     }
 	
-	protected void sendRegistMessage() {
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				if(connect()){
-					mHandler.sendEmptyMessage(0x123);
-				}else {
-					mHandler.sendEmptyMessage(0x124);
-				}
-			}
-		}).start();
-	}
-
-	@SuppressLint("HandlerLeak") 
-	private Handler mHandler=new Handler(){
-		public void handleMessage(Message msg) {
-			if (msg.what == 0x123) {
-				detailInfo.append("服务器连接成功—>");
-            	Progress_Regist.setText(detailInfo);
-				send();
-		        Log.i("Current Thread ID",""+Thread.currentThread().getId());
-			}else if(msg.what==0x124){
-				detailInfo.append("服务器连接失败");
-            	Progress_Regist.setText(detailInfo);
-            	regist_bt.setTextColor(Color.WHITE);
-        		regist_bt.setEnabled(true);
-			}
-		}
-	};
-	
-	protected void send() {
-        StringBuilder datas = new StringBuilder("regist\n");
-        for(String addr:registeResult.keySet()){
-        	datas.append(registeResult.get(addr).getName()+"\n"+addr+"\n");
-        }
-        Log.i("regist data",datas.toString());
-        datas.append("exit\n");
-       	out.println(datas);
-       	Log.i("send status", "数据已发送");
-       	detailInfo.append("注册信息已发送—>");
-    	Progress_Regist.setText(detailInfo);
-    	disconnect();
-	}
-	
-	protected void disconnect() {
-      	try {
-      		if(!clientSocket.isOutputShutdown()){
-      			clientSocket.shutdownOutput();
-      		}
-      		if(!clientSocket.isClosed()){
-      			clientSocket.close();
-      		}
-			detailInfo.append("服务器连接已关闭");
-        	Progress_Regist.setText(detailInfo);
-        	regist_bt.setText("注册");
-        	regist_bt.setTextColor(Color.WHITE);
-    		regist_bt.setEnabled(true);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	protected boolean connect() {
-   	   try{ 
-   		    String ip = mysp.getString("ip", null);
-   		    int port = mysp.getInt("port", 0);
-   		    Log.i("Address: ",ip);
-   		    Log.i("Port: ",port+"");
-   		    clientSocket = new Socket(ip,port);
-			Log.i("Socket Connect", "连接成功");
-	   		out = new PrintWriter(new BufferedWriter(  
-                   new OutputStreamWriter(clientSocket.getOutputStream(),"UTF-8")),true); 
-	   		Log.i("Socket Connect", "获得输出流句柄");
-	   		return true;
-       }catch (UnknownHostException e){
-           e.printStackTrace();
-			Log.i("Socket Connect", "连接失败1");
-			return false;
-       }catch (IOException e){
-           e.printStackTrace();
-			Log.i("Socket Connect", "连接失败2");
-			return false;
-       }
+	//单例模式，获得RegistFragment 的实例
+	public static RegistFragment getInstance(){
+		return registFragment;
 	}
 }

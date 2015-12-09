@@ -1,4 +1,6 @@
 package com.husong.btscannerdemo.fragment;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -17,38 +19,35 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
     private ResideMenuItem itemScan;
     private ResideMenuItem itemUpload;
 	private ResideMenuItem itemAbout;
-
-
-//    private List<Fragment> FragmentCache = new ArrayList<Fragment>();
-    
 	private static MenuActivity instance ;
+    private static SharedPreferences config_sp,status_sp;
+	private static SharedPreferences.Editor config_editor,status_editor; 
 	
+	//Activity 实例，单例模式
     public static MenuActivity getInstance() {
         return instance;
     }
     
-    /**
-     * Called when the activity is first created.
-     */
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         Log.i("Application Message", getApplication()+" in Activity");
         instance = this;
-       
-        setUpMenu();
-        if( savedInstanceState == null ){
-            changeFragment(RegistFragment.getInstance());//方法一对应
+        setUpMenu();//页面初始化
+        InitialGloalData();//全局参数初始化
+        if( savedInstanceState == null ){//显示当前页面为注册页面
+            changeFragment(RegistFragment.getInstance());
         }
-        //InitialGloalData();
     }
 
-	/*private void InitialGloalData() {
+    
+    
+	private void InitialGloalData() {
         
-         * 初始化全局变量：
+         /* 初始化全局变量：
          * 用SharedPreference存储与扫描，上传数据服务相关的参数
-         * 
          * 与上传有关参数:
     	 * address: ip地址
     	 * port: 端口号
@@ -62,31 +61,43 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
     	 * EndScanHour,EndScanMin: 结束上传时间
     	 * scanInterval: 扫描时间间隔
     	 * scanCount: 扫描次数
-    	 * 
-        private SharedPreferences MyPreferences;
-    	private SharedPreferences.Editor editor;    
-    	MyPreferences = this.getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
-        editor = MyPreferences.edit();
-    	editor.putString("ip", "192.168.1.181");
-    	editor.putInt("port", 60000);
-    	editor.putInt("StartUploadHour", 7);
-    	editor.putInt("StartUploadMin", 30);
-    	editor.putInt("EndUploadHour", 17);
-    	editor.putInt("EndUploadMin", 30);
-    	editor.putInt("UploadInterval", 8);
-    	editor.putInt("UploadCount",75);
-    	
-    	editor.putInt("StartScanHour", 7);
-    	editor.putInt("StartScanMin", 25);
-    	editor.putInt("EndScanHour", 17);
-    	editor.putInt("EndScanMin", 25);
-    	editor.putInt("ScanInterval", 20);
-    	editor.putInt("ScanCount",30);
-    	editor.commit();
-	}*/
+    	 */
+		config_sp = this.getSharedPreferences("config",Context.MODE_MULTI_PROCESS);
+		config_editor = config_sp.edit();
+        if(!config_sp.getBoolean("isInitialed", false)){//只在第一次安装时初始化
+        	config_editor.putBoolean("isInitialed", true);
+        	config_editor.putString("ip", "192.168.1.181");
+        	config_editor.putInt("port", 9999);
+        	config_editor.putInt("RegistPort", 8888);
+        	config_editor.putInt("StartUploadHour", 8);
+        	config_editor.putInt("StartUploadMin", 30);
+        	config_editor.putInt("EndUploadHour", 16);
+        	config_editor.putInt("EndUploadMin", 30);
+        	config_editor.putInt("UploadInterval", 8);
+        	config_editor.putInt("UploadCount",75);
+        	
+        	config_editor.putInt("StartScanHour", 8);
+        	config_editor.putInt("StartScanMin", 25);
+        	config_editor.putInt("EndScanHour", 16);
+        	config_editor.putInt("EndScanMin", 25);
+        	config_editor.putInt("ScanInterval", 60);
+        	config_editor.putInt("ScanCount",30);
+        	config_editor.commit();	
+        }
+        
+        /*
+         * 保存各按钮的状态以及扫描上传进度等信息
+         */
+        status_sp = this.getSharedPreferences("status",Context.MODE_MULTI_PROCESS);
+		status_editor = status_sp.edit();
+    	status_editor.putBoolean("isUploading", false);
+    	status_editor.putBoolean("isRegisting", false);
+    	status_editor.putBoolean("isScanning", false);
+    	status_editor.commit();	
+	}
 
+	//菜单栏的启动，初始化Fragment
 	private void setUpMenu() {
-        // attach to current activity;
         resideMenu = new ResideMenu(this);
         resideMenu.setUse3D(true);
         resideMenu.setBackground(R.drawable.menu_background);
@@ -127,6 +138,8 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
         return resideMenu.dispatchTouchEvent(ev);
     }
 
+    
+    //点击不同的按钮进入不同的Fragment
     @Override
     public void onClick(View view) {
         if (view == itemHome){
@@ -145,13 +158,12 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
         @Override
         public void openMenu() {
         }
-
         @Override
         public void closeMenu() {
         }
     };
 
-    //方法一、 原始的changeFragment，不能保存Fragment 状态
+    //Fragment的切换
   	private void changeFragment(Fragment targetFragment){
         resideMenu.clearIgnoredViewList();
         getSupportFragmentManager()
@@ -160,6 +172,7 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
                 .setTransitionStyle(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
     }
+  	
     // What good method is to access resideMenu
     public ResideMenu getResideMenu(){
         return resideMenu;

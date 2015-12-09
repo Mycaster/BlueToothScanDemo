@@ -62,12 +62,15 @@ public class ScanFragment extends Fragment
 	private Timer timer;
 	private TimerTask task ;
 	private boolean isTimerCancled =true;
-    private SharedPreferences MyPreferences;
+    private SharedPreferences config_sp;
     private SharedPreferences.Editor editor;
     
     private boolean isButtonStop = false;
     
+    private static int ScanCount2 ;
+    
     private static final ScanFragment scanFragment = new ScanFragment();
+    private static final long PERIOD_DAY = 24 * 60 * 60 * 1000;
     
     public static ScanFragment getInstance(){
     	return scanFragment;
@@ -81,8 +84,8 @@ public class ScanFragment extends Fragment
 		 } else {
 	         ((ViewGroup)ScanrootView.getParent()).removeView(ScanrootView);
 	     }
-    	MyPreferences = this.getActivity().getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
-        editor = MyPreferences.edit();
+		 config_sp = this.getActivity().getSharedPreferences("config",Context.MODE_MULTI_PROCESS);
+        editor = config_sp.edit();
     	
         bt_scan = (Button)ScanrootView.findViewById(R.id.scan_bt);
         bt_stopscan = (Button)ScanrootView.findViewById(R.id.stopscan_bt);
@@ -111,6 +114,7 @@ public class ScanFragment extends Fragment
   		getActivity().registerReceiver(receiver, filter);
   		filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         getActivity().registerReceiver(receiver, filter);
+  	    
 		bt_setStartBt.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
@@ -144,44 +148,31 @@ public class ScanFragment extends Fragment
 			@Override
 			public void onClick(View v) {
 				Date scanDate = new Date();
-			   	scanDate.setHours(MyPreferences.getInt("StartScanHour", 0));
-			   	scanDate.setMinutes(MyPreferences.getInt("StartScanMin", 0));
-			   	if(scanDate.after(new Date())){//如果设置的时间在当前时间之后才会执行
-					if(!mBtAdapter.isDiscovering()&&isTimerCancled){
-						bt_scan.setText("准备扫描...");
-						bt_scan.setEnabled(false);
-						bt_scan.setTextColor(Color.BLACK);
-						bt_stopscan.setEnabled(true);
-						bt_stopscan.setTextColor(Color.WHITE);
-						isButtonStop = false;
-					   	timer = new Timer(true);
-					   	task = new TimerTask(){  
-							 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
-								 if(count <= MyPreferences.getInt("ScanCount", 0)){
-									Log.i("Thread Id:",Thread.currentThread().getId()+"");
-									Log.i("scan ", "第"+count+"次：开始扫描");
-									if (mBtAdapter.isDiscovering())
-										mBtAdapter.cancelDiscovery();
-									mBtAdapter.startDiscovery();
-									Log.i("mBtAdapter.isDiscovering():",mBtAdapter.isDiscovering()+"");
-									Log.i("Message:0x123","discovery 开始");
-									mHandler.sendEmptyMessage(0x123);
-									++count;
-								 }else {
-									 mHandler.sendEmptyMessage(0x124);
-									 timer.cancel();
-									 isTimerCancled=true;
-									 count=1;
-									 Log.i("scan","timer is cancled");
-								 }
-							}
-						 };
-						timer.scheduleAtFixedRate(task, scanDate, MyPreferences.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
-					   	//timer.scheduleAtFixedRate(task, 1000, MyPreferences.getInt("ScanInterval", 0)*1000); //延时1s后执行，30s执行一次
-					   	isTimerCancled = false;
+			   	scanDate.setHours(config_sp.getInt("StartScanHour", 0));
+			   	scanDate.setMinutes(config_sp.getInt("StartScanMin", 0));
+			    Date EndScanDate =new Date();
+			    EndScanDate.setHours(config_sp.getInt("EndScanHour", 0));
+			    EndScanDate.setMinutes(config_sp.getInt("EndScanMin", 0));
+			    if(!EndScanDate.after(scanDate)){//结束时间小于开始时间
+					Toast.makeText(getActivity(), "结束时间请大于开始时间！", Toast.LENGTH_LONG).show();
+				} else if(!mBtAdapter.isDiscovering()&&isTimerCancled){
+					
+					bt_scan.setText("准备扫描...");
+					bt_scan.setEnabled(false);
+					bt_scan.setTextColor(Color.BLACK);
+					bt_stopscan.setEnabled(true);
+					bt_stopscan.setTextColor(Color.WHITE);
+					isButtonStop = false;
+					isTimerCancled = false;
+				   	timer = new Timer(true);
+				   	task = taskGenerator();
+					if(!scanDate.after(new Date())){//如果在设定的起始时间之后，则立即执行
+						scanDate = new Date();
+						int TotalTime = Tools.calculateTime(scanDate.getHours(),scanDate.getMinutes(),config_sp.getInt("EndScanHour", 0),config_sp.getInt("EndScanMin", 0));
+						ScanCount2 = TotalTime*60/config_sp.getInt("ScanInterval", 0)+1;
 					}
-				}else {
-					Toast.makeText(getActivity(), "请设置在当前时间之后执行该操作！", Toast.LENGTH_LONG).show();
+					timer.schedule(task, scanDate, config_sp.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
+					
 				}
 			}
 		});
@@ -190,7 +181,6 @@ public class ScanFragment extends Fragment
 			@Override
 			public void onClick(View arg0) {
 				timer.cancel();
-				task.cancel();
 				isTimerCancled = true;
 				isButtonStop = true;
 				mBtAdapter.cancelDiscovery();
@@ -204,6 +194,38 @@ public class ScanFragment extends Fragment
 		});
     	return ScanrootView;
     }    
+    public TimerTask taskGenerator(){
+    	return new TimerTask(){  
+			 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
+				 if(count <= ScanCount2){
+					Log.i("Thread Id:",Thread.currentThread().getId()+"");
+					Log.i("scan ", "第"+count+"次：开始扫描");
+					if (mBtAdapter.isDiscovering())
+						mBtAdapter.cancelDiscovery();
+					mBtAdapter.startDiscovery();
+					Log.i("mBtAdapter.isDiscovering():",mBtAdapter.isDiscovering()+"");
+					Log.i("Message:0x123","discovery 开始");
+					++count;
+					mHandler.sendEmptyMessage(0x123);
+				 }else {
+					 mHandler.sendEmptyMessage(0x124);
+					 task.cancel();//将上一次的任务和定时器取消
+					 timer.cancel();
+					 isTimerCancled=true;
+					 count=1;
+					 timer = new Timer();
+					 task = taskGenerator();
+					 Date scanDate = new Date();
+					 scanDate.setDate(scanDate.getDay()+1);
+				   	 scanDate.setHours(config_sp.getInt("StartScanHour", 0));
+				   	 scanDate.setMinutes(config_sp.getInt("StartScanMin", 0));
+					 timer.schedule(task, scanDate, config_sp.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
+					 Log.i("scan","timer is cancled");
+				 }
+			}
+    	};
+    }
+    
 	@SuppressLint("HandlerLeak") 
 	private Handler mHandler=new Handler(){
 		public void handleMessage(Message msg) {

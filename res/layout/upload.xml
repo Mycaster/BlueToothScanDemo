@@ -136,12 +136,13 @@
                 android:scaleType="fitXY"
                 android:src="@drawable/frame"/>
         <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:text="上传进度:"
                 android:id="@+id/uploadDetail" 
                 android:clickable="false"
                 android:textColor="#ffacacac" 
+                android:scrollbars="vertical"
                 android:textSize="17sp" />
     </FrameLayout>
 </LinearLayout>

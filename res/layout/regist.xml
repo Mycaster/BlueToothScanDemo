@@ -29,24 +29,57 @@
                 android:textSize="17sp" 
                 android:padding="5dp"/>
     </FrameLayout>
+    <LinearLayout 
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <EditText
+            android:id="@+id/regist_port"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10"
+            android:hint="输入注册端口"
+            android:inputType="number"
+            android:textSize="15sp" >
+            <requestFocus />
+        </EditText>
+        <Button 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="设置"
+            android:textSize="15sp"
+            android:layout_weight="4"
+            android:id="@+id/setPortBt"/>
+    </LinearLayout>
     <LinearLayout
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_above="@+id/ignored_view">
-
         <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/button_selector"
-                android:textColor="@android:color/white"
-                android:text=" 注册  "
-                android:textSize="17sp"
-                android:padding="12dp"
-                android:id="@+id/btn_open_menu"
-                android:layout_gravity="center"
-                android:layout_marginTop="4dp"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ConnectServer"
+            android:background="@drawable/button_selector"
+            android:textColor="@android:color/white"
+            android:text=" 连接服务器  "
+            android:layout_weight="1"
+            android:textSize="17sp"
+            android:padding="12dp"
+            android:layout_marginTop="4dp"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/button_selector"
+            android:textColor="@android:color/white"
+            android:text=" 注册  "
+            android:textSize="17sp"
+            android:padding="12dp"
+            android:id="@+id/btn_open_menu"
+            android:layout_marginTop="4dp"/>
 
     </LinearLayout>
     <TextView

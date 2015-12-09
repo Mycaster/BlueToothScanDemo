@@ -25,7 +25,7 @@ import com.husong.btscannerdemo.fragment.MenuActivity;
 
 public class Tools {
 	private static MenuActivity ma =  MenuActivity.getInstance();
-	private static SharedPreferences MyPreferences = ma.getSharedPreferences("test",Context.MODE_MULTI_PROCESS);
+	private static SharedPreferences MyPreferences = ma.getSharedPreferences("config",Context.MODE_MULTI_PROCESS);
     private static SharedPreferences.Editor editor = MyPreferences.edit();
     
     public static  void dateTimePicKDialog(final String title,final TextView info) {
@@ -179,7 +179,6 @@ public class Tools {
 		Date date=new Date();
 		SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		return df.format(date);
-
 	}
 
 	/*
@@ -192,6 +191,11 @@ public class Tools {
 		   return (EndHour-StartHour)*60+ EndMin-StartMin;
 	   }
 	   return 0; 
+   }
+   public static boolean isCurrentTime(Date date1,Date date2){
+//	   if(date1.)
+	   return false;
+	   
    }
 
 }
