@@ -6,9 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import com.husong.btscannerdemo.R;
-import com.husong.btscannerdemo.bean.iBeacon;
-import com.husong.btscannerdemo.controller.Tools;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
@@ -37,6 +35,10 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.husong.btscannerdemo.R;
+import com.husong.btscannerdemo.bean.iBeacon;
+import com.husong.btscannerdemo.controller.Tools;
+
 public class ScanFragment extends Fragment
 {
 	private Button bt_scan,bt_set,bt_stopscan;
@@ -60,17 +62,16 @@ public class ScanFragment extends Fragment
 	private Map<String,iBeacon> mapScanResult;
 	//定时器有关
 	private Timer timer;
-	private TimerTask task ;
+	private TimerTask scantask ;
 	private boolean isTimerCancled =true;
     private SharedPreferences config_sp;
     private SharedPreferences.Editor editor;
     
-    private boolean isButtonStop = false;
-    
-    private static int ScanCount2 ;
+    private boolean isButtonStop = false; // 由按钮主动停止任务，而不是任务自然执行结束停止
+    private static boolean isScanning = false;
     
     private static final ScanFragment scanFragment = new ScanFragment();
-    private static final long PERIOD_DAY = 24 * 60 * 60 * 1000;
+    public  static final long PERIOD_DAY = 24 * 60 * 60 * 1000; //一天的毫秒数
     
     public static ScanFragment getInstance(){
     	return scanFragment;
@@ -147,16 +148,17 @@ public class ScanFragment extends Fragment
 			@SuppressWarnings("deprecation")
 			@Override
 			public void onClick(View v) {
-				Date scanDate = new Date();
-			   	scanDate.setHours(config_sp.getInt("StartScanHour", 0));
-			   	scanDate.setMinutes(config_sp.getInt("StartScanMin", 0));
-			    Date EndScanDate =new Date();
-			    EndScanDate.setHours(config_sp.getInt("EndScanHour", 0));
-			    EndScanDate.setMinutes(config_sp.getInt("EndScanMin", 0));
+				Date scanDate = new Date(config_sp.getLong("StartScanTime", 0));
+			    Date EndScanDate =new Date(config_sp.getLong("EndScanTime", 0));
+			    Date EndUploadDate = new Date(config_sp.getLong("EndUploadTime", 0));
 			    if(!EndScanDate.after(scanDate)){//结束时间小于开始时间
 					Toast.makeText(getActivity(), "结束时间请大于开始时间！", Toast.LENGTH_LONG).show();
-				} else if(!mBtAdapter.isDiscovering()&&isTimerCancled){
-					
+				} else if(new Date().after(EndScanDate)){
+					Toast.makeText(getActivity(), "结束时间请大于当前时间", Toast.LENGTH_LONG).show();
+				}else if(EndScanDate.after(EndUploadDate)){
+					Toast.makeText(getActivity(), "最后一次扫描请设定在最后一次上传之前", Toast.LENGTH_LONG).show();
+				}else if(!mBtAdapter.isDiscovering()&&isTimerCancled){
+					isScanning  =true;
 					bt_scan.setText("准备扫描...");
 					bt_scan.setEnabled(false);
 					bt_scan.setTextColor(Color.BLACK);
@@ -165,14 +167,13 @@ public class ScanFragment extends Fragment
 					isButtonStop = false;
 					isTimerCancled = false;
 				   	timer = new Timer(true);
-				   	task = taskGenerator();
+				   	scantask = taskGenerator();
 					if(!scanDate.after(new Date())){//如果在设定的起始时间之后，则立即执行
 						scanDate = new Date();
-						int TotalTime = Tools.calculateTime(scanDate.getHours(),scanDate.getMinutes(),config_sp.getInt("EndScanHour", 0),config_sp.getInt("EndScanMin", 0));
-						ScanCount2 = TotalTime*60/config_sp.getInt("ScanInterval", 0)+1;
+						editor.putLong("nextScanTime", scanDate.getTime());
+						editor.commit();
 					}
-					timer.schedule(task, scanDate, config_sp.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
-					
+					timer.schedule(scantask, scanDate, 60*1000); //定时执行执行，60s执行一次
 				}
 			}
 		});
@@ -180,16 +181,21 @@ public class ScanFragment extends Fragment
 		bt_stopscan.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				timer.cancel();
-				isTimerCancled = true;
-				isButtonStop = true;
-				mBtAdapter.cancelDiscovery();
-				count=1;//重新置1
-				bt_scan.setText("开始扫描");
-				bt_scan.setEnabled(true);
-				bt_scan.setTextColor(Color.WHITE);
-				bt_stopscan.setEnabled(false);
-				bt_stopscan.setTextColor(Color.BLACK);
+				if(isScanning){
+					isScanning = false;
+					timer.cancel();
+					isTimerCancled = true;
+					isButtonStop = true;
+					mBtAdapter.cancelDiscovery();
+					count=1;//重新置1
+					bt_scan.setText("重新扫描");
+					bt_scan.setEnabled(true);
+					bt_scan.setTextColor(Color.WHITE);
+					bt_stopscan.setEnabled(false);
+					bt_stopscan.setTextColor(Color.BLACK);
+				}else{
+					Toast.makeText(getActivity(), "你都没开始就想着结束了", Toast.LENGTH_SHORT).show();
+				}
 			}
 		});
     	return ScanrootView;
@@ -197,7 +203,8 @@ public class ScanFragment extends Fragment
     public TimerTask taskGenerator(){
     	return new TimerTask(){  
 			 public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
-				 if(count <= ScanCount2){
+				 //判断当前时间是否在扫描的时间点上，nextTime初始值为开始的时间点，之后根据时间间隔不断更新下一次扫描的时间点
+			 	if(Tools.calculateTime(new Date(),new Date(config_sp.getLong("nextScanTime", 0)))<30*1000){
 					Log.i("Thread Id:",Thread.currentThread().getId()+"");
 					Log.i("scan ", "第"+count+"次：开始扫描");
 					if (mBtAdapter.isDiscovering())
@@ -207,21 +214,26 @@ public class ScanFragment extends Fragment
 					Log.i("Message:0x123","discovery 开始");
 					++count;
 					mHandler.sendEmptyMessage(0x123);
-				 }else {
-					 mHandler.sendEmptyMessage(0x124);
-					 task.cancel();//将上一次的任务和定时器取消
-					 timer.cancel();
-					 isTimerCancled=true;
-					 count=1;
-					 timer = new Timer();
-					 task = taskGenerator();
-					 Date scanDate = new Date();
-					 scanDate.setDate(scanDate.getDay()+1);
-				   	 scanDate.setHours(config_sp.getInt("StartScanHour", 0));
-				   	 scanDate.setMinutes(config_sp.getInt("StartScanMin", 0));
-					 timer.schedule(task, scanDate, config_sp.getInt("ScanInterval", 0)*1000); //定时执行执行，30s执行一次
-					 Log.i("scan","timer is cancled");
-				 }
+					/*
+					 * 计算下一次的扫描时间并存起来
+					 */
+					Date nextTime = new Date();
+					if(Tools.calculateTime(new Date(),new Date(config_sp.getLong("EndScanTime", 0)))<30*1000){
+						//如果当前时间是最后一次扫描的时间点，则下一次扫描时间变成第二天的开始， 
+						nextTime.setTime(nextTime.getTime()+config_sp.getLong("StartScanTime", 0)+2*PERIOD_DAY-config_sp.getLong("EndScanTime", 0));
+						mHandler.sendEmptyMessage(0x124);
+						isTimerCancled=true;
+						isScanning = false;
+						count=1;
+						System.out.println("明天上传时间："+nextTime);
+						Log.i("scan","今天的任务取消了，明天的任务已经设定了");
+					}else{
+						//如果不是则计算下一次扫描的时间点
+						nextTime.setSeconds(nextTime.getSeconds()+config_sp.getInt("ScanInterval", 0));
+					}
+					editor.putLong("nextScanTime", nextTime.getTime());
+					editor.commit();
+			 	}
 			}
     	};
     }
@@ -270,7 +282,12 @@ public class ScanFragment extends Fragment
 				if(!isButtonStop){
 					DisPlayData();
 			        writeData();
-					bt_scan.setText("第"+(count-1)+"次扫描结束");	
+			        if(count==1){
+			        	bt_scan.setText("再次扫描");
+			        	isScanning = false;
+			        }else{
+			        	bt_scan.setText("第"+(count-1)+"次扫描结束");	
+			        }
 				}
 			}
 		}

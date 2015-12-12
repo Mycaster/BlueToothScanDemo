@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import com.husong.btscannerdemo.fragment.OnProgressListener;
+import com.husong.btscannerdemo.fragment.ScanFragment;
+
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -24,13 +26,12 @@ public class UploadService extends Service {
    private PrintWriter out = null;
    private Socket clientSocket= null; 
    private Timer timer;
-   private TimerTask timerTask;
+   private TimerTask uploadTask;
    private SharedPreferences mysp,status_sp;
-   private SharedPreferences.Editor status_editor;
+   private SharedPreferences.Editor myeditor ,status_editor;
    private static int intCounter=1;
    private StringBuilder uploadInfo = new StringBuilder();
    private OnProgressListener onProgressListener;
-   
    
    public void setOnProgressListener(OnProgressListener onProgressListener) {
    	this.onProgressListener = onProgressListener;
@@ -52,6 +53,7 @@ public class UploadService extends Service {
    public void onCreate(){
        super.onCreate();
        mysp = getSharedPreferences("config",Context.MODE_MULTI_PROCESS);
+       myeditor = mysp.edit();
        status_sp = getSharedPreferences("status",Context.MODE_MULTI_PROCESS);
        status_editor = status_sp.edit();
        Log.i("Create Service", "onCreate");
@@ -115,13 +117,14 @@ public class UploadService extends Service {
 		if((intCounter-1)==mysp.getInt("UploadCount", 0)){
 			Log.i("status", "最后一次上传");
 			status_editor.putBoolean("isUploading", false);
+			status_editor.commit();
 			if(onProgressListener != null){
 				onProgressListener.onProgress("上传结束");
 			}
 			updateUI("全部发送完成\n");
 			intCounter = 1;
 			timer.cancel();
-			timerTask.cancel();
+			uploadTask.cancel();
 			Log.i("scan","Service is Destoryed");
 		}
    }
@@ -135,15 +138,33 @@ public class UploadService extends Service {
 			e.printStackTrace();
 		}
     }
+   
 	@SuppressWarnings("deprecation")
 	public void startUpload() {
-		timer = new Timer(true);
-		timerTask = new TimerTask(){  
-			 public void run() {  //另开的线程，不在UI线程里
-				 if(intCounter <= mysp.getInt("UploadCount", 0)){
+		Date uploadDate = new Date(mysp.getLong("StartUploadTime", 0));
+		if(new Date().after(uploadDate)){//已经过了开始时间，则立即执行
+			uploadDate = new Date();
+			myeditor.putLong("nextUploadTime", uploadDate.getTime());
+			myeditor.commit();
+		}
+	    Log.i("上传时间",uploadDate+"");
+	    timer = new Timer(true);
+		uploadTask =taskGenerator();
+	    timer.schedule(uploadTask,uploadDate,60*1000);
+		updateUI("上传进度:\n");
+	}
+   
+   public TimerTask taskGenerator(){
+	   	return new TimerTask(){  
+			 @SuppressWarnings("deprecation")
+			public void run() {  //另开的线程，不在UI线程里,所以不能显示数据
+				 //判断当前时间是否与上传的时间点吻合，是则开始上传
+				 //nextTime初始值为开始的时间点，之后根据时间间隔不断更新下一次上传的时间点
+			 	if(Tools.calculateTime(new Date(),new Date(mysp.getLong("nextUploadTime", 0)))<30*1000){
 					 //第一次发送时，更新按钮UI
 					 if(intCounter==1){
 						status_editor.putBoolean("isUploading", true);
+						status_editor.commit();
 						if(onProgressListener != null){
 							onProgressListener.onProgress("正在上传");
 						}
@@ -156,24 +177,37 @@ public class UploadService extends Service {
 					}else{			//连接失败只更新UI不发送数据，并且下次上传会上传上次数据
 						updateUI("服务器连接失败");
 						timer.cancel();
-						timerTask.cancel();
+						uploadTask.cancel();
 						++intCounter;
 					}
+					
+					/*
+					 * 计算下一次的扫描时间并存起来
+					 */
+					Date nextTime = new Date();
+					if(Tools.calculateTime(new Date(),new Date(mysp.getLong("EndUploadTime", 0)))<30*1000){
+						//如果当前时间是最后一次扫描的时间点，则下一次扫描时间变成第二天的开始， 
+						nextTime.setTime(nextTime.getTime()+mysp.getLong("StartUploadTime", 0)+2*ScanFragment.PERIOD_DAY-mysp.getLong("EndUploadTime", 0));
+						intCounter=1;
+						Log.i("下一次任务时间",nextTime+"");
+						Log.i("scan","今天的任务取消了，明天的任务已经设定了");
+					}else{
+						//如果不是则计算下一次扫描的时间点
+						nextTime.setSeconds(nextTime.getSeconds()+mysp.getInt("UploadInterval", 0));
+					}
+					myeditor.putLong("nextUploadTime", nextTime.getTime());
+					myeditor.commit();
 				 }
-			 }
-		};
-		Date startDate =new Date();
-	    startDate.setHours(mysp.getInt("StartUploadHour", 0));
-	    startDate.setMinutes(mysp.getInt("StartUploadMin", 0));
-	    Log.i("上传时间",startDate.getHours()+":"+startDate.getMinutes());
-	    timer.schedule(timerTask,startDate,mysp.getInt("UploadInterval", 0)*1000);
-		updateUI("上传进度:\n");
-	}
+			}
+	   	};
+    }
+
 	
 	public void stopUpload(){
 		status_editor.putBoolean("isUploading", false);
+		status_editor.commit();
 		timer.cancel();
-		timerTask.cancel();
+		uploadTask.cancel();
 		if(clientSocket.isConnected()){
 			disConnect();
 		}

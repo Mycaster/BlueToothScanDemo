@@ -1,4 +1,6 @@
 package com.husong.btscannerdemo.fragment;
+import java.util.Date;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -27,8 +29,6 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
     public static MenuActivity getInstance() {
         return instance;
     }
-    
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,20 +69,27 @@ public class MenuActivity extends FragmentActivity implements View.OnClickListen
         	config_editor.putString("ip", "192.168.1.181");
         	config_editor.putInt("port", 9999);
         	config_editor.putInt("RegistPort", 8888);
-        	config_editor.putInt("StartUploadHour", 8);
-        	config_editor.putInt("StartUploadMin", 30);
-        	config_editor.putInt("EndUploadHour", 16);
-        	config_editor.putInt("EndUploadMin", 30);
+        	//将Date转化成long 存储
+        	Date date = new Date();
+        	date.setHours(8);
+        	date.setMinutes(30);
+        	config_editor.putLong("StartUploadTime", date.getTime());
+        	config_editor.putLong("nextUploadTime", date.getTime());
+        	date.setHours(16);
+        	config_editor.putLong("EndUploadTime", date.getTime());
         	config_editor.putInt("UploadInterval", 8);
+        	config_editor.putInt("ScanFreq", 1);
         	config_editor.putInt("UploadCount",75);
         	
-        	config_editor.putInt("StartScanHour", 8);
-        	config_editor.putInt("StartScanMin", 25);
-        	config_editor.putInt("EndScanHour", 16);
-        	config_editor.putInt("EndScanMin", 25);
+        	date.setHours(8);
+        	date.setMinutes(25);
+        	config_editor.putLong("StartScanTime", date.getTime());
+        	config_editor.putLong("nextScanTime", date.getTime());
+        	date.setHours(16);
+        	config_editor.putLong("EndScanTime", date.getTime());
         	config_editor.putInt("ScanInterval", 60);
         	config_editor.putInt("ScanCount",30);
-        	config_editor.commit();	
+        	config_editor.commit();
         }
         
         /*

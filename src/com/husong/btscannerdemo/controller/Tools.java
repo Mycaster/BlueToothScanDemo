@@ -23,10 +23,11 @@ import android.widget.TimePicker.OnTimeChangedListener;
 import com.husong.btscannerdemo.R;
 import com.husong.btscannerdemo.fragment.MenuActivity;
 
+@SuppressLint({ "SimpleDateFormat", "InflateParams" }) 
 public class Tools {
 	private static MenuActivity ma =  MenuActivity.getInstance();
-	private static SharedPreferences MyPreferences = ma.getSharedPreferences("config",Context.MODE_MULTI_PROCESS);
-    private static SharedPreferences.Editor editor = MyPreferences.edit();
+	private static SharedPreferences msp = ma.getSharedPreferences("config",Context.MODE_MULTI_PROCESS);
+    private static SharedPreferences.Editor editor = msp.edit();
     
     public static  void dateTimePicKDialog(final String title,final TextView info) {
 		LinearLayout dateTimeLayout = (LinearLayout)ma.getLayoutInflater().inflate(R.layout.timepicker, null);
@@ -43,29 +44,45 @@ public class Tools {
 				.setPositiveButton("设置", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int whichButton) {
 						if(title.equals("设置起始时间")){
-							editor.putInt("StartScanHour", timepicker.getCurrentHour());
-				        	editor.putInt("StartScanMin", timepicker.getCurrentMinute());
+//							timepicker.setCurrentHour(new Date(msp.getLong("StartScanTime", 0)).getHours());
+//							timepicker.setCurrentMinute(new Date(msp.getLong("StartScanTime", 0)).getMinutes());
+							Date date = new Date();
+							date.setHours(timepicker.getCurrentHour());
+							date.setMinutes(timepicker.getCurrentMinute());
+							editor.putLong("StartScanTime", date.getTime());
 				        	editor.commit();
 				        	Log.i("editor", timepicker.getCurrentHour()+":"+timepicker.getCurrentMinute());
 				        	Log.i("editor", "commit");
 				        	updatescanDetail(info);
 						}else if(title.equals("设置结束时间")){
-				        	editor.putInt("EndScanHour", timepicker.getCurrentHour());
-				        	editor.putInt("EndScanMin", timepicker.getCurrentMinute());
+//							timepicker.setCurrentHour(new Date(msp.getLong("EndScanTime", 0)).getHours());
+//							timepicker.setCurrentMinute(new Date(msp.getLong("EndScanTime", 0)).getMinutes());
+							Date date = new Date();
+							date.setHours(timepicker.getCurrentHour());
+							date.setMinutes(timepicker.getCurrentMinute());
+							editor.putLong("EndScanTime", date.getTime());
 				        	editor.commit();
 				        	Log.i("editor2", timepicker.getCurrentHour()+":"+timepicker.getCurrentMinute());
 				        	Log.i("editor2", "commit");
 				        	updatescanDetail(info);
 						}else if(title.equals("设置起始上传时间")){
-							editor.putInt("StartUploadHour", timepicker.getCurrentHour());
-				        	editor.putInt("StartUploadMin", timepicker.getCurrentMinute());
+//							timepicker.setCurrentHour(new Date(msp.getLong("StartUploadTime", 0)).getHours());
+//							timepicker.setCurrentMinute(new Date(msp.getLong("StartUploadTime", 0)).getMinutes());
+							Date date = new Date();
+							date.setHours(timepicker.getCurrentHour());
+							date.setMinutes(timepicker.getCurrentMinute());
+							editor.putLong("StartUploadTime", date.getTime());
 				        	editor.commit();
 				        	Log.i("editor", timepicker.getCurrentHour()+":"+timepicker.getCurrentMinute());
 				        	Log.i("editor", "commit");
 				        	updateDisplayInfo(info);
 						}else if(title.equals("设置结束上传时间")){
-				        	editor.putInt("EndUploadHour", timepicker.getCurrentHour());
-				        	editor.putInt("EndUploadMin", timepicker.getCurrentMinute());
+//							timepicker.setCurrentHour(new Date(msp.getLong("EndUploadTime", 0)).getHours());
+//							timepicker.setCurrentMinute(new Date(msp.getLong("EndUploadTime", 0)).getMinutes());
+							Date date = new Date();
+							date.setHours(timepicker.getCurrentHour());
+							date.setMinutes(timepicker.getCurrentMinute());
+							editor.putLong("EndUploadTime", date.getTime());
 				        	editor.commit();
 				        	Log.i("editor2", timepicker.getCurrentHour()+":"+timepicker.getCurrentMinute());
 				        	Log.i("editor2", "commit");
@@ -80,55 +97,34 @@ public class Tools {
 	}
 	
 	public static void updatescanDetail(TextView scaninfo) {
-    	int ss_hour = MyPreferences.getInt("StartScanHour", 0);
-    	int ss_min = MyPreferences.getInt("StartScanMin",0);
-    	int se_hour = MyPreferences.getInt("EndScanHour", 0);
-    	int se_min = MyPreferences.getInt("EndScanMin", 0);
-    	int s_interval = MyPreferences.getInt("ScanInterval", 0);
-    	int TotalTime = Tools.calculateTime(ss_hour,ss_min,se_hour,se_min);
-    	int s_count = TotalTime*60/s_interval+1;
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+		Date startScanTime = new Date(msp.getLong("StartScanTime", 0));
+		Date EndScanTime = new Date(msp.getLong("EndScanTime", 0));
+		int s_interval = msp.getInt("ScanInterval", 0);
+    	int TotalTime = (int) ((EndScanTime.getTime()-startScanTime.getTime())/1000);
+    	int s_count = TotalTime/s_interval+1;
     	editor.putInt("ScanCount", s_count);
     	editor.commit();
-    	String time="";
-    	if(ss_min<10 && se_min>=10){
-    		time=ss_hour+":0"+ss_min+"—"+se_hour+":"+se_min;
-    	}else if(ss_min<10 && se_min<10){
-    		time=ss_hour+":0"+ss_min+"—"+se_hour+":0"+se_min;
-    	}else if(ss_min>=10&&se_min<10){
-    		time=ss_hour+":"+ss_min+"—"+se_hour+":0"+se_min;
-    	}else if(ss_min>=10&&se_min>=10){
-    		time=ss_hour+":"+ss_min+"—"+se_hour+":"+se_min;
-    	}
-    	scaninfo.setText("扫描时间:  "+time+"\n扫描间隔: "+s_interval+	"秒" +"\n扫描次数: "+s_count);
+		scaninfo.setText("扫描时间:  "+sdf.format(startScanTime)+"-"+sdf.format(EndScanTime)+
+				"\n扫描间隔: "+s_interval+	"秒" +"\n扫描次数: "+s_count);
 	}
 	
 	public static void updateDisplayInfo(TextView detail_tx) {
-    	int us_hour = MyPreferences.getInt("StartUploadHour", 0);
-    	int us_min = MyPreferences.getInt("StartUploadMin",0);
-    	int ue_hour = MyPreferences.getInt("EndUploadHour", 0);
-    	int ue_min = MyPreferences.getInt("EndUploadMin", 0);
-    	int u_interval = MyPreferences.getInt("UploadInterval", 0);
-		int TotalTime = Tools.calculateTime(us_hour,us_min,ue_hour,ue_min);
-		int u_count = TotalTime*60/u_interval+1;
-		editor.putInt("UploadCount", u_count);
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+		Date startUploadTime = new Date(msp.getLong("StartUploadTime", 0));
+		Date EndUploadTime = new Date(msp.getLong("EndUploadTime", 0));
+		int u_interval = msp.getInt("UploadInterval", 0);
+    	int TotalTime = (int) ((EndUploadTime.getTime()-startUploadTime.getTime())/1000);
+    	int u_count = TotalTime/u_interval+1;
+    	editor.putInt("UploadCount", u_count);
     	editor.commit();
-    	String time="";
-    	if(us_min<10&&ue_min>=10){
-    		time=us_hour+":0"+us_min+"—"+ue_hour+":"+ue_min;
-    	}else if(us_min<10&&ue_min<10){
-    		time=us_hour+":0"+us_min+"—"+ue_hour+":0"+ue_min;
-    	}else if(us_min>=10&&ue_min<10){
-    		time=us_hour+":"+us_min+"—"+ue_hour+":0"+ue_min;
-    	}else if(us_min>=10&&ue_min>=10){
-    		time=us_hour+":"+us_min+"—"+ue_hour+":"+ue_min;
-    	}
-		String displayInfo = 
-				"  IP地址:		"+MyPreferences.getString("ip",null)+
-				"\n  端口号:		"+MyPreferences.getInt("port", 0)+
-				"\n  时间间隔:		"+MyPreferences.getInt("UploadInterval", 0)+"秒"+
-				"\n  上传时间:		"+time+
-				"\n  上传次数:		"+MyPreferences.getInt("UploadCount", 0);
-		detail_tx.setText(displayInfo);
+    	String displayInfo = 
+				"  IP地址:		"+msp.getString("ip",null)+
+				"\n  端口号:		"+msp.getInt("port", 0)+
+				"\n  时间间隔:		"+msp.getInt("UploadInterval", 0)+"秒"+
+				"\n  上传时间:		"+sdf.format(startUploadTime)+"-"+sdf.format(EndUploadTime)+
+				"\n  上传次数:		"+msp.getInt("UploadCount", 0);
+    	detail_tx.setText(displayInfo);
 	}
 
 	/*
@@ -176,26 +172,16 @@ public class Tools {
 	 */
 	@SuppressLint("SimpleDateFormat") 
 	public static String getCurrentTime(){
-		Date date=new Date();
 		SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		return df.format(date);
+		return df.format(new Date());
 	}
-
-	/*
-	 * 计算时间差
-	 */
-   public static int calculateTime(int StartHour,int StartMin,int EndHour,int EndMin){
-	   if(StartHour <= EndHour){
-		   if((StartHour==EndHour)&&StartMin>EndMin)
-			   return 0;
-		   return (EndHour-StartHour)*60+ EndMin-StartMin;
-	   }
-	   return 0; 
-   }
-   public static boolean isCurrentTime(Date date1,Date date2){
-//	   if(date1.)
-	   return false;
-	   
+   
+   public static long calculateTime(Date date1 ,Date date2){
+	   long l = date1.getTime()-date2.getTime();
+	   Log.i("当前时间",date1+"");
+	   Log.i("下次上传时间",date2+"");
+	   Log.i("两次时间差",l+"");
+	   return Math.abs(l);
    }
 
 }

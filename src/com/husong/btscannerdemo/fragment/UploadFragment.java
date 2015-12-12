@@ -129,16 +129,12 @@ public class UploadFragment extends Fragment{
 			@SuppressWarnings("deprecation")
 			@Override
 			public void onClick(View arg0) {
-				Date startDate =new Date();
-			    startDate.setHours(config_sp.getInt("StartUploadHour", 0));
-			    startDate.setMinutes(config_sp.getInt("StartUploadMin", 0));
-			    Date EndDate =new Date();
-			    EndDate.setHours(config_sp.getInt("EndUploadHour", 0));
-			    EndDate.setMinutes(config_sp.getInt("EndUploadMin", 0));
-			    if(!startDate.after(new Date())){
-					Toast.makeText(getActivity(), "请设置在当前时间之后执行该操作！", Toast.LENGTH_LONG).show();
-				}else if(!EndDate.after(startDate)){
+				Date startDate =new Date(config_sp.getLong("StartUploadTime", 0));
+			    Date EndDate =new Date(config_sp.getLong("EndUploadTime", 0));
+			    if(!EndDate.after(startDate)){
 					Toast.makeText(getActivity(), "结束时间请大于开始时间！", Toast.LENGTH_LONG).show();
+				}else if(new Date().after(EndDate)){
+					Toast.makeText(getActivity(), "结束时间请大于当前时间", Toast.LENGTH_LONG).show();
 				}else {
 					//改变界面状态
 					uploadInfo.delete(0, uploadInfo.length());
@@ -149,7 +145,6 @@ public class UploadFragment extends Fragment{
 	                bt_Send.setTextColor(Color.BLACK);
 	                bt_Stop.setEnabled(true);
 	                bt_Stop.setTextColor(Color.WHITE);
-			        //开始上传
 			        myservice.startUpload();
 	                Log.i("UploadFragment", "等待上传");
 				}
@@ -198,8 +193,8 @@ public class UploadFragment extends Fragment{
 	private Handler mHandler = new Handler(){
 		public void handleMessage(Message msg){
 			String text = msg.obj.toString();
-			if(text.equals("正在上传")){
-				bt_Send.setText("正在上传");
+			if(text.equals("正在上传...")){
+				bt_Send.setText("正在上传...");
 			}else if(text.equals("")||text.equals("上传进度:\n请检查服务器连接")||text.equals("上传结束")){
 				bt_Send.setText("再次上传");
                 bt_Send.setEnabled(true);
